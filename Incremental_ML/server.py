@@ -3,9 +3,6 @@
 # first of all import the socket library
 # main issue: http://scikit-learn.org/stable/modules/scaling_strategies.html
 from network_setup import *
-# from sklearn.naive_bayes import MultinomialNB
-# from sklearn.linear_model import Perceptron, SGDClassifier, SGDRegressor
-# from sklearn.linear_model import PassiveAggressiveRegressor, PassiveAggressiveClassifier
 from sklearn.model_selection import KFold
 from sklearn.metrics import accuracy_score, classification_report
 from misc import make_confusion_matrix, read_data, is_valid_file_type, label_testing_set

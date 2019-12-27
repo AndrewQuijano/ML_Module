@@ -1,10 +1,9 @@
 #!/usr/bin/python3
 import pandas as pd
 from sklearn.preprocessing import LabelEncoder, OneHotEncoder
-from subprocess import call, run
-from os import name, geteuid
+from os import name
 from os.path import basename, dirname, abspath
-from sys import argv
+
 # The purpose of this class is mostly to modify data sets
 # for machine learning purposes. This includes functions such
 # as follows:
@@ -123,13 +122,15 @@ def merge_csv(file_name, n_parts=9):
 
 
 # Use this method to ensure ALL rows in the data set are unique
+# Write it out to new file
 def filter_duplicate_rows(file_name):
     s = set()
     with open(file_name, "r") as read:
         for line in read:
-            args = line.rstrip().split(",")
-            s.add(args[col_number])
-    return list(s)
+            s.add(line)
+    with open(file_name, "w") as wr:
+        for line in s:
+            wr.write(line)
 
 
 # Given a file with CSV, use regular Label encoding!
@@ -152,7 +153,7 @@ def encode_data(file_name, col_to_encode):
                     f.write(k + "," + str(v) + '\n')
                 f.write('\n')
         else:
-            with open(p + "/labels.txt", "a+") as f:
+            with open(p + "./labels.txt", "a+") as f:
                 f.write("For Column " + str(col) + '\n')
                 for k, v in zip(features, label):
                     f.write(k + "," + str(v) + '\n')
@@ -177,6 +178,15 @@ def encode_data(file_name, col_to_encode):
             new_line = ','.join(parts)
             write_kdd.write(new_line + '\n')
             write_kdd.flush()
+
+
+def filter_duplicate_features(file_name, col_number):
+    s = set()
+    with open(file_name, "r") as read:
+        for line in read:
+            args = line.rstrip().split(",")
+            s.add(args[col_number])
+    return list(s)
 
 
 def hot_encoder(train_x):
@@ -225,6 +235,7 @@ def call_functions(arg_vector):
     command = arg_vector[0]
     file_name = arg_vector[1]
     if command == 'drop_columns':
+        cols = []
         drop_columns(file_name, [(0, 9), (21, 41)])
     elif command == 'drop_rows':
         drop_rows(file_name, [0])
@@ -249,7 +260,7 @@ def call_functions(arg_vector):
 
 def main():
     # Read all commands from a batch file!
-    with open("./data_proc_batch.txt", "r") as rd:
+    with open("./batch.txt", "r") as rd:
         for line in rd:
             call_functions(line)
     data_shell()

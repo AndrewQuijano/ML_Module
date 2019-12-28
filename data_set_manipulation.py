@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 import pandas as pd
 from sklearn.preprocessing import LabelEncoder, OneHotEncoder
-from os import name, remove, rename
+from os import remove, rename
 from os.path import basename, dirname, abspath, isfile
 
 # The purpose of this class is mostly to modify data sets
@@ -20,9 +20,47 @@ from os.path import basename, dirname, abspath, isfile
 # 7- Uses Drop Rows, but given a column, if a certain value is found in that column, delete the row!
 
 
+# This is because the mini hand-writing data-set doesn't have the label prepended!
+def append_column(file_name='./train_3.txt', label='3'):
+    b = basename(file_name)
+    with open(file_name) as read_data, open('./prep_' + b, 'w+') as write_data:
+        for line in read_data:
+            write_data.write(label + ',' + line)
+
+    # Now you have the completed file, create the file in cwd!
+    # You can over-write if the file exists in CWD!
+    if isfile('./' + b):
+        remove('./' + b)
+    rename('./prep_' + b, b)
+    print("Finished appending the column!")
+
+
+# This is because the damn kdd does NOT have the headers pre-made...
+def append_header(file_name='./kdd.csv', header_name="./header.txt"):
+    b = basename(file_name)
+    header_names = []
+    # Get the header from "./header.txt"
+    with open(header_name) as read_header:
+        for line in read_header:
+            header_names.append(line.rstrip())
+    write_headers = ','.join(header_names)
+
+    with open(file_name) as read_data, open('./prep_' + b, 'w+') as write_data:
+        write_data.write(write_headers + '\n')
+        for line in read_data:
+            write_data.write(line)
+
+    # Now you have the completed file, create the file in cwd!
+    # You can over-write if the file exists in CWD!
+    if isfile('./' + b):
+        remove('./' + b)
+    rename('./prep_' + b, b)
+    print("Finished appending the header!")
+
+
 def n_col(file_name):
-    with open(file_name) as read_kdd_data:
-        for line in read_kdd_data:
+    with open(file_name) as read_data:
+        for line in read_data:
             line = line.rstrip()
             parts = line.split(",")
             if len(parts) > 0:
@@ -53,21 +91,23 @@ def drop_columns(file_name, keep_col_ranges, head=False):
     if isfile('./' + b):
         remove('./' + b)
     rename('./prep_' + b, b)
+    print("Column Dropping complete, only kept columns: " + str(use_cols))
 
 
 # Use the method below
-def drop_rows(file_name, keep_row_ranges, head=False):
+def drop_rows(file_name, keep_row_ranges):
     b = basename(file_name)
     use_rows = []
     for tup in keep_row_ranges:
         use_rows = use_rows + [i for i in range(tup[0], tup[1])]
     df = pd.read_csv(file_name, userows=use_rows)
-    df.to_csv("./prep_" + b, index=False, header=head)
+    df.to_csv("./prep_" + b, index=False)
     # Now you have the completed file, create the file in cwd!
     # You can over-write if the file exists in CWD!
     if isfile('./' + b):
         remove('./' + b)
     rename('./prep_' + b, b)
+    print("Row Dropping complete, only kept columns: " + str(use_rows))
 
 
 # Remember Github's Limit is 100 MB
@@ -152,18 +192,12 @@ def encode_data(file_name, col_to_encode):
         lab = LabelEncoder()
         label = lab.fit_transform(features)
         label_map[col] = lab
-        if name == 'nt':
-            with open(p + "\\labels.txt", "a+") as f:
-                f.write("For Column " + str(col) + '\n')
-                for k, v in zip(features, label):
-                    f.write(k + "," + str(v) + '\n')
-                f.write('\n')
-        else:
-            with open(p + "./labels.txt", "a+") as f:
-                f.write("For Column " + str(col) + '\n')
-                for k, v in zip(features, label):
-                    f.write(k + "," + str(v) + '\n')
-                f.write('\n')
+
+        with open(p + "./labels.txt", "a+") as f:
+            f.write("For Column " + str(col) + '\n')
+            for k, v in zip(features, label):
+                f.write(k + "," + str(v) + '\n')
+            f.write('\n')
 
     with open(file_name) as read_data, open("./prep_" + b, "w+") as write_data:
         for line in read_data:
@@ -184,41 +218,44 @@ def encode_data(file_name, col_to_encode):
     if isfile('./' + b):
         remove('./' + b)
     rename('./prep_' + b, './' + b)
+    print("Finished Data encoding!")
 
 
+# It needs to be returned as list to be used by label encoder!
 def filter_duplicate_features(file_name, col_number):
     s = set()
     with open(file_name, "r") as read:
         for line in read:
             args = line.rstrip().split(",")
             s.add(args[col_number])
-    return s
+    return list(s)
 
 
 def hot_encoder(file_name, encode_columns, head=False):
     b = basename(file_name)
     data = pd.read_csv(file_name)
     one_hot_encoder = OneHotEncoder(categorical_features=encode_columns)
-    data = one_hot_encoder.fit_transform(data).toarray()
+    # You do need to use Label encoder!
+    # encode labels with value between 0 and n_classes - 1.
+    le = LabelEncoder()
+    new_data = data.apply(le.fit_transform)
+    # Now use the hot encoder!
+    data = one_hot_encoder.fit_transform(new_data).toarray()
     # Now you have the completed file, create the file in cwd!
     data.to_csv('./prep_' + b, index=False, header=head)
     if isfile('./' + b):
         remove('./' + b)
     rename('./prep_' + b, b)
+    print("Hot Encoding complete!")
 
 
 # A decent chunk of data sets prefer the class to be the last column
 # Personally, I prefer it to be the first column. This method will adjust that for me
 def shift_column(file_name):
-    p = dirname(abspath(file_name))
     b = basename(file_name)
-    if name == 'nt':
-        output = p + "\\shifted_" + b
-    else:
-        output = p + "//shifted_" + b
 
-    with open(file_name) as read_kdd_data, open(output, "w+") as write_kdd:
-        for line in read_kdd_data:
+    with open(file_name) as read_data, open('./prep_' + b, "w+") as write_kdd:
+        for line in read_data:
             # Swap using encoder
             line = line.rstrip()
             parts = line.split(",")
@@ -230,6 +267,10 @@ def shift_column(file_name):
             new_line = ','.join(parts)
             write_kdd.write(new_line + '\n')
             write_kdd.flush()
+    if isfile('./' + b):
+        remove('./' + b)
+    rename('./prep_' + b, b)
+    print("Shifting Column complete!")
 
 
 # Main shell function to do all data-set manipulation
@@ -256,14 +297,20 @@ def call_functions(arg_vector):
         print("File not found: " + file_name)
         return
 
-    if command == 'drop_columns':
+    # USE TUPLE RANGES TO INDICATE COLUMNS TO KEEP e. g. (0, 9)
+    # ex: keep_columns <data-set> 0 9 21 41
+    # Keeps only columns 0 - 9 and 21 - 41
+    if command == 'keep_columns':
         cols = []
         for i in range(2, len(arg_vector) - 1):
             start = int(arg_vector[i])
             end = int(arg_vector[i + 1])
             cols.append((start, end))
         drop_columns(file_name, cols)
-    elif command == 'drop_rows':
+    # USE TUPLE RANGES TO INDICATE COLUMNS TO KEEP e. g. (0, 10)
+    # ex: keep_columns <data-set> 0 10
+    # keep rows 0 - 10 ONLY
+    elif command == 'keep_rows':
         rows = []
         for i in range(2, len(arg_vector) - 1):
             start = int(arg_vector[i])
@@ -294,6 +341,7 @@ def call_functions(arg_vector):
 def main():
     # Read all commands from a batch file!
     if isfile('./batch.txt'):
+        print("Batch file with commands found! Running it now!")
         with open("./batch.txt", "r") as rd:
             for line in rd:
                 call_functions(line)
@@ -301,9 +349,9 @@ def main():
 
 
 # To convert KDD
-# 1- First Swap columns AND Encode it
-# 2- Drop Columns that are content related
-# 3- Split into parts -- FOR SAVING IT ONLY
-# **To use it, just merge it, use raw file name w/o extension!**
+# 1- First Swap columns
+# 2- Encode Columns 2, 3, 4
+# 3- Drop Columns that are content related, So keep columns: (0, 9) and (21, 41)
 if __name__ == "__main__":
+    append_header()
     main()

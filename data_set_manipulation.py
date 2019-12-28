@@ -89,6 +89,11 @@ def split_csv(file_name, size=500000):
             else:
                 lines.append(line)
             line_number += 1
+    # Get the last chunk that is NOT 50,000 lines long!
+    if len(lines) > 0:
+        with open('./' + str(file_part) + '_' + b, 'w+') as chunk:
+            chunk.writelines(lines)
+    print("CSV split complete!")
 
 
 # This is the counter-part function to split_csv
@@ -98,16 +103,22 @@ def split_csv(file_name, size=500000):
 def merge_csv(file_name):
     b = basename(file_name)
     file_part = 1
-
+    lines = []
     while True:
-        if isfile('./' + str(file_part) + '_' + b):
-            with open('./' + str(file_part) + '_' + b, 'r') as chunk:
-                with open(file_name, 'a+') as big_file:
-                    for line in chunk:
-                        big_file.write(line)
+        current_file_part = './' + str(file_part) + '_' + b
+        if isfile(current_file_part):
+            # Get the lines
+            with open(current_file_part, 'r') as file_chunk:
+                for line in file_chunk:
+                    lines.append(line)
+            # Append to bigger file!
+            with open(file_name, 'a+') as big_file:
+                big_file.writelines(lines)
+            del lines[:]
             file_part += 1
         else:
             break
+    print("Completed Merging the CSVs!")
 
 
 # Use this method to ensure ALL rows in the data set are unique
@@ -234,8 +245,17 @@ def data_shell():
 
 
 def call_functions(arg_vector):
+    if len(arg_vector) <= 1:
+        print("Invalid Number of Arguments!")
+        return
+
     command = arg_vector[0]
     file_name = arg_vector[1]
+    # Stop any errors here
+    if not isfile(file_name) and command != 'merge':
+        print("File not found: " + file_name)
+        return
+
     if command == 'drop_columns':
         cols = []
         for i in range(2, len(arg_vector) - 1):
@@ -273,9 +293,10 @@ def call_functions(arg_vector):
 
 def main():
     # Read all commands from a batch file!
-    with open("./batch.txt", "r") as rd:
-        for line in rd:
-            call_functions(line)
+    if isfile('./batch.txt'):
+        with open("./batch.txt", "r") as rd:
+            for line in rd:
+                call_functions(line)
     data_shell()
 
 

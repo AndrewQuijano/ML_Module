@@ -28,44 +28,37 @@ from csv import reader
 
 
 # ORIGINAL PARTS WHICH ALREADY ARE INCREMENTAL!
-def init_classifiers(train_x, train_y):
-    if train_x is None or train_y is None:
-        bayes = MultinomialNB()
-        percep = Perceptron(warm_start=True, max_iter=10, tol=1e-3)
-        sgd_class = SGDClassifier(warm_start=True, max_iter=10, tol=1e-3)
-        pa_classifier = PassiveAggressiveClassifier(warm_start=True, max_iter=10, tol=1e-3)
-        sgd_regress = SGDRegressor(warm_start=True, max_iter=10, tol=1e-3)
-        pa_regress = PassiveAggressiveRegressor(warm_start=True, max_iter=10, tol=1e-3)
-    else:
-        kf = KFold(n_splits=10)
-        bayes = tune_bayes(train_x, train_y, kf, False)
-        percep = tune_perceptron(train_x, train_y, kf, False)
-        sgd_class = tune_sgd_clf(train_x, train_y, kf, False)
-        sgd_regress = tune_passive_aggressive_reg(train_x, train_y, kf, False)
-        pa_classifier = tune_passive_aggressive_clf(train_x, train_y, kf, False)
-        pa_regress = tune_passive_aggressive_reg(train_x, train_y, kf, False)
-        # Get Parameters now
-        with open("results.txt", "w+") as fd:
-            fd.write("[bayes] Best Parameters: " + str(bayes.best_params_) + '\n')
-            fd.write("[percep] Best Parameters: " + str(percep.best_params_) + '\n')
-            fd.write("[sgd_class] Best Parameters: " + str(sgd_class.best_params_) + '\n')
-            fd.write("[pa_classifier] Best Parameters: " + str(pa_classifier.best_params_) + '\n')
-            fd.write("[sgd_regress] Best Parameters: " + str(sgd_regress.best_params_) + '\n')
-            fd.write("[pa_regress] Best Parameters: " + str(pa_regress.best_params_) + '\n')
+def init_tuned_classifiers(train_x, train_y):
+    kf = KFold(n_splits=10)
+    bayes = tune_bayes(train_x, train_y, kf, False)
+    percep = tune_perceptron(train_x, train_y, kf, False)
+    sgd_class = tune_sgd_clf(train_x, train_y, kf, False)
+    sgd_regress = tune_passive_aggressive_reg(train_x, train_y, kf, False)
+    pa_classifier = tune_passive_aggressive_clf(train_x, train_y, kf, False)
+    pa_regress = tune_passive_aggressive_reg(train_x, train_y, kf, False)
 
-            fd.write("[bayes] Training Score: " + str(bayes.score(train_x, train_y)) + '\n')
-            fd.write("[percep] Training Score: " + str(percep.score(train_x, train_y)) + '\n')
-            fd.write("[sgd_class] Training Score: " + str(sgd_class.score(train_x, train_y)) + '\n')
-            fd.write("[pa_classifier] Training Score: " + str(pa_classifier.score(train_x, train_y)) + '\n')
-            fd.write("[sgd_regress] Training Score: " + str(sgd_regress.score(train_x, train_y)) + '\n')
-            fd.write("[pa_regress] Training Score: " + str(pa_regress.score(train_x, train_y)) + '\n')
-        # If trained, should just dump now...
-        dump(bayes, "i_bayes.joblib")
-        dump(sgd_class, "sgd_class.joblib")
-        dump(sgd_regress, "sgd_regress.joblib")
-        dump(pa_classifier, "PA_class.joblib")
-        dump(pa_regress, "PA_regress.joblib")
-        dump(percep, "percep.joblib")
+    # Get Parameters now
+    with open("results.txt", "w+") as fd:
+        fd.write("[bayes] Best Parameters: " + str(bayes.best_params_) + '\n')
+        fd.write("[percep] Best Parameters: " + str(percep.best_params_) + '\n')
+        fd.write("[sgd_class] Best Parameters: " + str(sgd_class.best_params_) + '\n')
+        fd.write("[pa_classifier] Best Parameters: " + str(pa_classifier.best_params_) + '\n')
+        fd.write("[sgd_regress] Best Parameters: " + str(sgd_regress.best_params_) + '\n')
+        fd.write("[pa_regress] Best Parameters: " + str(pa_regress.best_params_) + '\n')
+
+        fd.write("[bayes] Training Score: " + str(bayes.score(train_x, train_y)) + '\n')
+        fd.write("[percep] Training Score: " + str(percep.score(train_x, train_y)) + '\n')
+        fd.write("[sgd_class] Training Score: " + str(sgd_class.score(train_x, train_y)) + '\n')
+        fd.write("[pa_classifier] Training Score: " + str(pa_classifier.score(train_x, train_y)) + '\n')
+        fd.write("[sgd_regress] Training Score: " + str(sgd_regress.score(train_x, train_y)) + '\n')
+        fd.write("[pa_regress] Training Score: " + str(pa_regress.score(train_x, train_y)) + '\n')
+    # Once trained, should just dump now...
+    dump(bayes, "i_bayes.joblib")
+    dump(sgd_class, "sgd_class.joblib")
+    dump(sgd_regress, "sgd_regress.joblib")
+    dump(pa_classifier, "PA_class.joblib")
+    dump(pa_regress, "PA_regress.joblib")
+    dump(percep, "percep.joblib")
     return [bayes, percep, sgd_class, pa_classifier, sgd_regress, pa_regress]
 
 
@@ -124,11 +117,13 @@ def server():
             # "exit"
 
             # ---PLEASE NOTE CURRENTLY THIS IS BUILD WITH ONE THING AT A TIME!---
-            data = connection.recv(1024).decode()
+            data = read_from_socket(connection).decode()
             print("Input is: " + data)
-            args = data.split(",")
+            # Check the first part! for 'test' or 'tran' -> 'train'
+            cmd = data[:4]
+            data = data[4:]
 
-            if args[0] == "train":
+            if cmd == "tran":
                 x, y = parse_string_to_numpy(data, True)
                 # Error occurred in converting string to numpy!
                 if x is None:
@@ -136,17 +131,16 @@ def server():
                     continue
 
                 # 1- Write the data to a CSV file
-                with open("data_set.csv") as file:
+                with open("./data_set.csv") as file:
                     file.write(data + '\n')
 
                 # 2- Check if it is time to tune classifier?
 
                 # 3- Update Classifiers
-
-                bayes.partial_fit(x, y)
+                bayes.partial_fit(x, y, classes=None)
                 connection.close()
 
-            elif args[0] == "test":
+            elif cmd == "test":
                 x, y = parse_string_to_numpy(data, False)
                 # Error occurred in converting string to numpy!
                 if x is None:
@@ -158,7 +152,7 @@ def server():
                     connection.send(np.array_str(np.arange(1)).encode())
                 connection.close()
 
-            elif args[0] == "exit":
+            elif cmd == "exit":
                 connection.close()
                 break
 
@@ -184,7 +178,7 @@ def main(train_data):
     class_names = ["bayes", "percep", "sgd_class", "pa_classifier", "sgd_regress", "pa_regress"]
     # classes = np.arange(0, 23, 1, dtype=float)
     # [0, 23) or [0, 22]
-    classifiers = init_classifiers(train_x, train_y)
+    classifiers = init_tuned_classifiers(train_x, train_y)
 
     # Train it
     # TODO: Read say 100 lines, make to Numpy THEN FIT
@@ -250,8 +244,18 @@ def create_server_socket(port_number, max_connections=5):
         if server_socket:
             server_socket.close()
         return None
-    server_socket.listen(max_connections)  # Now wait for client connection.
+    server_socket.listen(max_connections)
     return server_socket
+
+
+def read_from_socket(sock, buffer_size=1024):
+    result = bytearray()
+    while True:
+        data = sock.recv(buffer_size)
+        result.extend(data)
+        if len(data) < buffer_size:
+            break
+    return result
 
 
 if __name__ == "__main__":

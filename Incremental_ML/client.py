@@ -1,26 +1,17 @@
 import socket
-from network_setup import *
 from sys import argv, exit
 
 
 # Will send (x, y) to cluster
 def main():
-    if len(argv) != 2:
+    if len(argv) != 3:
         print("Usage: python3 client.py <IP Address> <Port Number>")
         exit(0)
 
     # Test Values for connection
-    if valid_ip(argv[0]):
-        ip = argv[0]
-    else:
-        print("Invalid IP Address!")
-        exit(0)
+    ip = argv[1]
+    port = int(argv[2])
 
-    if valid_port(argv[1]):
-        port = int(argv[1])
-    else:
-        print("Invalid Port Number!")
-        exit(0)
 
     # Keep sending (x, y) coordinates...
     while True:

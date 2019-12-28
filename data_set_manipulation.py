@@ -1,15 +1,15 @@
 #!/usr/bin/python3
 import pandas as pd
 from sklearn.preprocessing import LabelEncoder, OneHotEncoder
-from os import name
-from os.path import basename, dirname, abspath
+from os import name, remove, rename
+from os.path import basename, dirname, abspath, isfile
 
 # The purpose of this class is mostly to modify data sets
 # for machine learning purposes. This includes functions such
 # as follows:
 
 # NOTE: When using this script it ASSUMES class is the first column, aka column 0
-# NOTE: All new files will have pre-pended the operation completed on it!
+# NOTE: PLEASE MAKE COPIES OF FILES BEING TAMPERED WITH! IT WILL BE DELETED IF IN SAME WORKING DIRECTORY!
 # NOTE: All new files will be written to the current working directory of the shell script!
 # 1- Drop Columns (INPUT: COLUMNS TO KEEP)
 # 2- Drop Rows (INPUT: ROWS TO KEEP)
@@ -42,95 +42,90 @@ def n_row(file_name):
 # Input: file is the CSV file to be modified
 # Input: ranges is a list of tuples containing columns to NOT be dropped!
 def drop_columns(file_name, keep_col_ranges, head=False):
-    p = dirname(abspath(file_name))
     b = basename(file_name)
     use_cols = []
     for tup in keep_col_ranges:
         use_cols = use_cols + [i for i in range(tup[0], tup[1])]
     df = pd.read_csv(file_name, usecols=use_cols)
-    # Detect if Windows
-    if name == 'nt':
-        df.to_csv(p + "\\col_" + b, index=False, header=head)
-    else:
-        df.to_csv(p + "/col_" + b, index=False, header=head)
+    df.to_csv("./prep_" + b, index=False, header=head)
+    # Now you have the completed file, create the file in cwd!
+    # You can over-write if the file exists in CWD!
+    if isfile('./' + b):
+        remove('./' + b)
+    rename('./prep_' + b, b)
 
 
 # Use the method below
 def drop_rows(file_name, keep_row_ranges, head=False):
-    p = dirname(abspath(file_name))
     b = basename(file_name)
     use_rows = []
     for tup in keep_row_ranges:
         use_rows = use_rows + [i for i in range(tup[0], tup[1])]
     df = pd.read_csv(file_name, userows=use_rows)
-    # Detect if Windows
-    if name == 'nt':
-        df.to_csv(p + "\\row_" + b, index=False, header=head)
-    else:
-        df.to_csv(p + "/row_" + b, index=False, header=head)
+    df.to_csv("./prep_" + b, index=False, header=head)
+    # Now you have the completed file, create the file in cwd!
+    # You can over-write if the file exists in CWD!
+    if isfile('./' + b):
+        remove('./' + b)
+    rename('./prep_' + b, b)
 
 
 # Remember Github's Limit is 100 MB
 # So to store large data sets online, I just split them up by 500,000 row chunks
+# so <blah>/kdd.csv will become in cwd:
+# 1_kdd.csv, 2_kdd.csv, etc.
 def split_csv(file_name, size=500000):
     b = basename(file_name)
-    p = dirname(abspath(file_name))
+    line_number = 1
     file_part = 1
-    idx = 1
     lines = []
     with open(file_name, 'r') as big_file:
         for line in big_file:
-            if file_part % size == 0:
-                # Write to Windows
-                if name == 'nt':
-                    with open(p + "\\" + b + "_part_" + str(idx), 'w+') as chunk:
-                        chunk.writelines(lines)
-                # Write to Linux
-                else:
-                    with open(p + "\\" + b + "_part" + str(idx), 'w+') as chunk:
-                        chunk.writelines(lines)
+            if line_number % size == 0:
+                with open('./' + str(file_part) + '_' + b, 'w+') as chunk:
+                    chunk.writelines(lines)
                 lines = []
-                idx += 1
+                file_part += 1
             else:
                 lines.append(line)
-            file_part += 1
+            line_number += 1
 
 
-# This is the counter-part function
-def merge_csv(file_name, n_parts=9):
+# This is the counter-part function to split_csv
+# THIS EXPECTS THE MERGING CSVs to be in same working directory!
+# e. g. If I see ./1_kdd.csv, ./2_kdd.csv, the input should be 'kdd.csv'
+# You should end up with a './kdd.csv'
+def merge_csv(file_name):
     b = basename(file_name)
-    p = dirname(abspath(file_name))
-    # Remove extension!
-    b_part = str(b.split(".")[0])
     file_part = 1
-    # if n_parts is 9
-    # j goes from 0 - 8
-    # Remember files parts is goes 1 - 9!
 
-    for j in range(n_parts):
-        if name == 'nt':
-            with open(p + "\\" + b_part + "_part" + str(j + 1) + ".csv", 'r') as chunk:
+    while True:
+        if isfile('./' + str(file_part) + '_' + b):
+            with open('./' + str(file_part) + '_' + b, 'r') as chunk:
                 with open(file_name, 'a+') as big_file:
                     for line in chunk:
                         big_file.write(line)
+            file_part += 1
         else:
-            with open(p + "/" + b_part + "_part" + str(j + 1) + ".csv", 'r') as chunk:
-                with open(file_name, 'a+') as big_file:
-                    for line in chunk:
-                        big_file.write(line)
-        file_part += 1
+            break
 
 
 # Use this method to ensure ALL rows in the data set are unique
 # Write it out to new file
 def filter_duplicate_rows(file_name):
+    b = basename(file_name)
     s = set()
     with open(file_name, "r") as read:
         for line in read:
             s.add(line)
-    with open(file_name, "w") as wr:
+    with open('./prep' + b, "w") as wr:
         for line in s:
             wr.write(line)
+    # Now you have the completed file, create the file in cwd!
+    # You can over-write if the file exists in CWD!
+    if isfile('./' + b):
+        remove('./' + b)
+    rename('./prep_' + b, './' + b)
 
 
 # Given a file with CSV, use regular Label encoding!
@@ -159,13 +154,8 @@ def encode_data(file_name, col_to_encode):
                     f.write(k + "," + str(v) + '\n')
                 f.write('\n')
 
-    if name == 'nt':
-        output_file = p + "\\prep_" + b
-    else:
-        output_file = p + "/prep_" + b
-
-    with open(file_name) as read_kdd_data, open(output_file, "w+") as write_kdd:
-        for line in read_kdd_data:
+    with open(file_name) as read_data, open("./prep_" + b, "w+") as write_data:
+        for line in read_data:
             parts = line.rstrip().split(',')
 
             # Now that I built the encoder, iterate columns
@@ -176,8 +166,13 @@ def encode_data(file_name, col_to_encode):
 
             # Write the result
             new_line = ','.join(parts)
-            write_kdd.write(new_line + '\n')
-            write_kdd.flush()
+            write_data.write(new_line + '\n')
+            write_data.flush()
+    # Now you have the completed file, create the file in cwd!
+    # You can over-write if the file exists in CWD!
+    if isfile('./' + b):
+        remove('./' + b)
+    rename('./prep_' + b, './' + b)
 
 
 def filter_duplicate_features(file_name, col_number):
@@ -186,12 +181,19 @@ def filter_duplicate_features(file_name, col_number):
         for line in read:
             args = line.rstrip().split(",")
             s.add(args[col_number])
-    return list(s)
+    return s
 
 
-def hot_encoder(train_x):
-    oh = OneHotEncoder()
-    oh.fit_transform(train_x)
+def hot_encoder(file_name, encode_columns, head=False):
+    b = basename(file_name)
+    data = pd.read_csv(file_name)
+    one_hot_encoder = OneHotEncoder(categorical_features=encode_columns)
+    data = one_hot_encoder.fit_transform(data).toarray()
+    # Now you have the completed file, create the file in cwd!
+    data.to_csv('./prep_' + b, index=False, header=head)
+    if isfile('./' + b):
+        remove('./' + b)
+    rename('./prep_' + b, b)
 
 
 # A decent chunk of data sets prefer the class to be the last column
@@ -236,9 +238,18 @@ def call_functions(arg_vector):
     file_name = arg_vector[1]
     if command == 'drop_columns':
         cols = []
-        drop_columns(file_name, [(0, 9), (21, 41)])
+        for i in range(2, len(arg_vector) - 1):
+            start = int(arg_vector[i])
+            end = int(arg_vector[i + 1])
+            cols.append((start, end))
+        drop_columns(file_name, cols)
     elif command == 'drop_rows':
-        drop_rows(file_name, [0])
+        rows = []
+        for i in range(2, len(arg_vector) - 1):
+            start = int(arg_vector[i])
+            end = int(arg_vector[i + 1])
+            rows.append((start, end))
+        drop_rows(file_name, rows)
     elif command == 'split':
         split_csv(file_name)
     elif command == 'merge':
@@ -247,12 +258,14 @@ def call_functions(arg_vector):
         filter_duplicate_rows(file_name)
     elif command == 'encode':
         cols = []
-        cols.add(int(arg_vector[2]))
+        for i in range(2, len(arg_vector)):
+            cols.append(int(arg_vector[i]))
         encode_data(file_name, cols)
     elif command == 'hot_encode':
         cols = []
-        cols.add(int(arg_vector[2]))
-        hot_encoder(file_name)
+        for i in range(2, len(arg_vector)):
+            cols.append(int(arg_vector[i]))
+        hot_encoder(file_name, cols)
     # This is just in case you do have classes in first column
     elif command == 'shift':
         shift_column(file_name)

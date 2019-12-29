@@ -18,6 +18,8 @@ from os.path import basename, dirname, abspath, isfile
 # 5- Encode Data in specified column using regular label encoding (uses helper function 'filter_duplicate_features'
 # 6- Encode Data in specified column using Hot Label Encoding
 # 7- Uses Drop Rows, but given a column, if a certain value is found in that column, delete the row!
+# 8- Shift Column (This is for moving the class column from last column to first column)
+# 9- Drop row if at column X the feature is Y
 
 
 # This is because the mini hand-writing data-set doesn't have the label prepended!
@@ -79,13 +81,13 @@ def n_row(file_name):
 # For kdd, we skip columns 10 - 22
 # Input: file is the CSV file to be modified
 # Input: ranges is a list of tuples containing columns to NOT be dropped!
-def drop_columns(file_name, keep_col_ranges, head=False):
+def drop_columns(file_name, keep_col_ranges):
     b = basename(file_name)
     use_cols = []
     for tup in keep_col_ranges:
         use_cols = use_cols + [i for i in range(tup[0], tup[1])]
     df = pd.read_csv(file_name, usecols=use_cols)
-    df.to_csv("./prep_" + b, index=False, header=head)
+    df.to_csv("./prep_" + b, index=False)
     # Now you have the completed file, create the file in cwd!
     # You can over-write if the file exists in CWD!
     if isfile('./' + b):
@@ -94,13 +96,17 @@ def drop_columns(file_name, keep_col_ranges, head=False):
     print("Column Dropping complete, only kept columns: " + str(use_cols))
 
 
-# Use the method below
+# Use the method below to keep all rows you want to keep!
 def drop_rows(file_name, keep_row_ranges):
     b = basename(file_name)
     use_rows = []
     for tup in keep_row_ranges:
         use_rows = use_rows + [i for i in range(tup[0], tup[1])]
-    df = pd.read_csv(file_name, userows=use_rows)
+    # GET ALL POSSIBLE ROWS THEN GET KEEP ROWS
+    all_rows = [i for i in range(0, n_row(file_name))]
+    to_drop_rows = list(set(all_rows) - set(keep_row_ranges))
+    df = pd.read_csv(file_name)
+    df.drop(df.index[to_drop_rows])
     df.to_csv("./prep_" + b, index=False)
     # Now you have the completed file, create the file in cwd!
     # You can over-write if the file exists in CWD!
@@ -231,7 +237,7 @@ def filter_duplicate_features(file_name, col_number):
     return list(s)
 
 
-def hot_encoder(file_name, encode_columns, head=False):
+def hot_encoder(file_name, encode_columns):
     b = basename(file_name)
     data = pd.read_csv(file_name)
     one_hot_encoder = OneHotEncoder(categorical_features=encode_columns)
@@ -242,7 +248,7 @@ def hot_encoder(file_name, encode_columns, head=False):
     # Now use the hot encoder!
     data = one_hot_encoder.fit_transform(new_data).toarray()
     # Now you have the completed file, create the file in cwd!
-    data.to_csv('./prep_' + b, index=False, header=head)
+    data.to_csv('./prep_' + b, index=False)
     if isfile('./' + b):
         remove('./' + b)
     rename('./prep_' + b, b)
@@ -273,10 +279,24 @@ def shift_column(file_name):
     print("Shifting Column complete!")
 
 
+def filter_rows_by_feature(file_name, column_number, target_feature):
+    b = basename(file_name)
+    with open(file_name) as read_data, open('./prep_' + b, 'w+') as write_data:
+        for line in read_data:
+            lines = line.rstrip().split(',')
+            if lines[column_number] != target_feature:
+                write_data.write(','.join(lines) + '\n')
+
+    if isfile('./' + b):
+        remove('./' + b)
+    rename('./prep_' + b, b)
+    print("Dropping row by feature complete!")
+
+
 # Main shell function to do all data-set manipulation
 def data_shell():
     while True:
-        commands = input()
+        commands = input("data_manipulation> ")
         arg_vector = commands.split()
         if arg_vector[0] == 'exit':
             print("EXITING!")
@@ -302,9 +322,9 @@ def call_functions(arg_vector):
     # Keeps only columns 0 - 9 and 21 - 41
     if command == 'keep_columns':
         cols = []
-        for i in range(2, len(arg_vector) - 1):
+        for i in range(2, len(arg_vector), 2):
             start = int(arg_vector[i])
-            end = int(arg_vector[i + 1])
+            end = int(arg_vector[i + 1]) + 1
             cols.append((start, end))
         drop_columns(file_name, cols)
     # USE TUPLE RANGES TO INDICATE COLUMNS TO KEEP e. g. (0, 10)
@@ -312,9 +332,9 @@ def call_functions(arg_vector):
     # keep rows 0 - 10 ONLY
     elif command == 'keep_rows':
         rows = []
-        for i in range(2, len(arg_vector) - 1):
+        for i in range(2, len(arg_vector), 2):
             start = int(arg_vector[i])
-            end = int(arg_vector[i + 1])
+            end = int(arg_vector[i + 1]) + 1
             rows.append((start, end))
         drop_rows(file_name, rows)
     elif command == 'split':
@@ -341,10 +361,14 @@ def call_functions(arg_vector):
 def main():
     # Read all commands from a batch file!
     if isfile('./batch.txt'):
+        append_header()
         print("Batch file with commands found! Running it now!")
         with open("./batch.txt", "r") as rd:
             for line in rd:
-                call_functions(line)
+                call_functions(line.split())
+        print("Batch file complete!")
+    else:
+        print("No batch file found, starting shell!")
     data_shell()
 
 
@@ -353,5 +377,4 @@ def main():
 # 2- Encode Columns 2, 3, 4
 # 3- Drop Columns that are content related, So keep columns: (0, 9) and (21, 41)
 if __name__ == "__main__":
-    append_header()
     main()

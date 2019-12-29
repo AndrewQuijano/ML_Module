@@ -103,7 +103,7 @@ def drop_rows(file_name, keep_row_ranges):
     for tup in keep_row_ranges:
         use_rows = use_rows + [i for i in range(tup[0], tup[1])]
     # GET ALL POSSIBLE ROWS THEN GET KEEP ROWS
-    all_rows = [i for i in range(0, n_row(file_name))]
+    all_rows = [i for i in range(0, n_row(file_name) - 1)]
     to_drop_rows = list(set(all_rows) - set(keep_row_ranges))
     df = pd.read_csv(file_name)
     df.drop(df.index[to_drop_rows])

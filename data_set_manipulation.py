@@ -18,6 +18,7 @@ from os.path import basename, isfile
 # 6- Uses Drop Rows, but given a column, if a certain value is found in that column, delete the row!
 # 7- Shift Column (This is for moving the class column from last column to first column)
 # 8- Drop row if at column X the feature is Y
+# 9- Filter duplicate rows (Used by NSL-KDD from original KDD)
 
 
 # Makes a guess if the file has a header or not
@@ -163,24 +164,6 @@ def merge_csv(file_name):
     print("Completed Merging the CSVs!")
 
 
-# Use this method to ensure ALL rows in the data set are unique
-# Write it out to new file
-def filter_duplicate_rows(file_name):
-    b = basename(file_name)
-    s = set()
-    with open(file_name, "r") as read:
-        for line in read:
-            s.add(line)
-    with open('./prep' + b, "w") as wr:
-        for line in s:
-            wr.write(line)
-    # Now you have the completed file, create the file in cwd!
-    # You can over-write if the file exists in CWD!
-    if isfile('./' + b):
-        remove('./' + b)
-    rename('./prep_' + b, './' + b)
-
-
 # Given a file with CSV, use regular Label encoding!
 def encode_data(file_name, col_to_encode, header=True):
     b = basename(file_name)
@@ -299,6 +282,24 @@ def filter_rows_by_feature(file_name, column_number, target_feature):
     print("All rows that at Column: " + str(column_number) + " has the feature: " + target_feature + " is now removed!")
 
 
+# Use this method to ensure ALL rows in the data set are unique
+# Write it out to new file
+def filter_duplicate_rows(file_name):
+    b = basename(file_name)
+    s = set()
+    with open(file_name, "r") as read:
+        for line in read:
+            s.add(line)
+    with open('./prep_' + b, "w") as wr:
+        for line in s:
+            wr.write(line)
+    # Now you have the completed file, create the file in cwd!
+    # You can over-write if the file exists in CWD!
+    if isfile('./' + b):
+        remove('./' + b)
+    rename('./prep_' + b, './' + b)
+
+
 # Main shell function to do all data-set manipulation
 def data_shell():
     while True:
@@ -337,8 +338,6 @@ def call_functions(arg_vector):
         split_csv(file_name)
     elif command == 'merge':
         merge_csv(file_name)
-    elif command == 'filter':
-        filter_duplicate_rows(file_name)
     elif command == 'encode':
         cols = []
         for i in range(2, len(arg_vector)):
@@ -353,6 +352,12 @@ def call_functions(arg_vector):
     # This is just in case you do have classes in first column
     elif command == 'shift':
         shift_column(file_name)
+    elif command == 'filter':
+        filter_duplicate_rows(file_name)
+    elif command == 'filter_feature':
+        col_number = int(arg_vector[2])
+        target_feature = arg_vector[3]
+        filter_rows_by_feature(file_name, col_number, target_feature)
 
 
 def main():

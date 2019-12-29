@@ -2,24 +2,40 @@
 import pandas as pd
 from sklearn.preprocessing import LabelEncoder, OneHotEncoder
 from os import remove, rename
-from os.path import basename, dirname, abspath, isfile
+from os.path import basename, isfile
 
 # The purpose of this class is mostly to modify data sets
-# for machine learning purposes. This includes functions such
-# as follows:
+# for machine learning purposes. This includes functions such as follows:
 
 # NOTE: When using this script it ASSUMES class is the first column, aka column 0
 # NOTE: PLEASE MAKE COPIES OF FILES BEING TAMPERED WITH! IT WILL BE DELETED IF IN SAME WORKING DIRECTORY!
 # NOTE: All new files will be written to the current working directory of the shell script!
 # 1- Drop Columns (INPUT: COLUMNS TO KEEP)
-# 2- Drop Rows (INPUT: ROWS TO KEEP)
-# 3- Merge/Split CSVs, this is because Github doesn't permit easy storage of big data sets!
-# 4- Seen in NSL-KDD data set, remove ALL duplicate rows from data set!
-# 5- Encode Data in specified column using regular label encoding (uses helper function 'filter_duplicate_features'
-# 6- Encode Data in specified column using Hot Label Encoding
-# 7- Uses Drop Rows, but given a column, if a certain value is found in that column, delete the row!
-# 8- Shift Column (This is for moving the class column from last column to first column)
-# 9- Drop row if at column X the feature is Y
+# 2- Merge/Split CSVs, this is because Github doesn't permit easy storage of big data sets!
+# 3- Seen in NSL-KDD data set, remove ALL duplicate rows from data set!
+# 4- Encode Data in specified column using regular label encoding (uses helper function 'filter_duplicate_features'
+# 5- Encode Data in specified column using Hot Label Encoding
+# 6- Uses Drop Rows, but given a column, if a certain value is found in that column, delete the row!
+# 7- Shift Column (This is for moving the class column from last column to first column)
+# 8- Drop row if at column X the feature is Y
+
+
+# Makes a guess if the file has a header or not
+# Assumes header will be always non-numeric names.
+def has_header(file_name):
+    with open(file_name) as read_data:
+        # Read the first line and see if you fail to convert to int for first row
+        for line in read_data:
+            first_row = line.rstrip().split(',')
+            num_col = len(first_row)
+            counter = 0
+            for element in first_row:
+                try:
+                    int(element)
+                except ValueError:
+                    counter += 1
+            break
+    return num_col == counter
 
 
 # This is because the mini hand-writing data-set doesn't have the label prepended!
@@ -96,26 +112,6 @@ def drop_columns(file_name, keep_col_ranges):
     print("Column Dropping complete, only kept columns: " + str(use_cols))
 
 
-# Use the method below to keep all rows you want to keep!
-def drop_rows(file_name, keep_row_ranges):
-    b = basename(file_name)
-    use_rows = []
-    for tup in keep_row_ranges:
-        use_rows = use_rows + [i for i in range(tup[0], tup[1])]
-    # GET ALL POSSIBLE ROWS THEN GET KEEP ROWS
-    all_rows = [i for i in range(0, n_row(file_name) - 1)]
-    to_drop_rows = list(set(all_rows) - set(keep_row_ranges))
-    df = pd.read_csv(file_name)
-    df.drop(df.index[to_drop_rows])
-    df.to_csv("./prep_" + b, index=False)
-    # Now you have the completed file, create the file in cwd!
-    # You can over-write if the file exists in CWD!
-    if isfile('./' + b):
-        remove('./' + b)
-    rename('./prep_' + b, b)
-    print("Row Dropping complete, only kept columns: " + str(use_rows))
-
-
 # Remember Github's Limit is 100 MB
 # So to store large data sets online, I just split them up by 500,000 row chunks
 # so <blah>/kdd.csv will become in cwd:
@@ -186,26 +182,32 @@ def filter_duplicate_rows(file_name):
 
 
 # Given a file with CSV, use regular Label encoding!
-def encode_data(file_name, col_to_encode):
-    # Get the file information
-    p = dirname(abspath(file_name))
+def encode_data(file_name, col_to_encode, header=True):
     b = basename(file_name)
     label_map = {}
 
     # In each column, get the unique columns
     for col in col_to_encode:
-        features = filter_duplicate_features(file_name, col)
+        features = filter_duplicate_features(file_name, col, header)
         lab = LabelEncoder()
         label = lab.fit_transform(features)
         label_map[col] = lab
-
-        with open(p + "./labels.txt", "a+") as f:
+        # Write out the labels.
+        with open("./labels.txt", "a+") as f:
             f.write("For Column " + str(col) + '\n')
             for k, v in zip(features, label):
                 f.write(k + "," + str(v) + '\n')
             f.write('\n')
 
+    # Iterate through file for each row and label the columns!
+
     with open(file_name) as read_data, open("./prep_" + b, "w+") as write_data:
+        # If there is a header, skip the line!
+        # Don't forget to write it to new file as well!
+        if header:
+            write_data.write(read_data.readline())
+
+        # Parse everything else!
         for line in read_data:
             parts = line.rstrip().split(',')
 
@@ -228,9 +230,13 @@ def encode_data(file_name, col_to_encode):
 
 
 # It needs to be returned as list to be used by label encoder!
-def filter_duplicate_features(file_name, col_number):
+def filter_duplicate_features(file_name, col_number, header=True):
     s = set()
     with open(file_name, "r") as read:
+        # If there is a header, don't include in encoding!
+        if header:
+            read.readline()
+
         for line in read:
             args = line.rstrip().split(",")
             s.add(args[col_number])
@@ -290,7 +296,7 @@ def filter_rows_by_feature(file_name, column_number, target_feature):
     if isfile('./' + b):
         remove('./' + b)
     rename('./prep_' + b, b)
-    print("Dropping row by feature complete!")
+    print("All rows that at Column: " + str(column_number) + " has the feature: " + target_feature + " is now removed!")
 
 
 # Main shell function to do all data-set manipulation
@@ -327,16 +333,6 @@ def call_functions(arg_vector):
             end = int(arg_vector[i + 1]) + 1
             cols.append((start, end))
         drop_columns(file_name, cols)
-    # USE TUPLE RANGES TO INDICATE COLUMNS TO KEEP e. g. (0, 10)
-    # ex: keep_columns <data-set> 0 10
-    # keep rows 0 - 10 ONLY
-    elif command == 'keep_rows':
-        rows = []
-        for i in range(2, len(arg_vector), 2):
-            start = int(arg_vector[i])
-            end = int(arg_vector[i + 1]) + 1
-            rows.append((start, end))
-        drop_rows(file_name, rows)
     elif command == 'split':
         split_csv(file_name)
     elif command == 'merge':
@@ -347,7 +343,8 @@ def call_functions(arg_vector):
         cols = []
         for i in range(2, len(arg_vector)):
             cols.append(int(arg_vector[i]))
-        encode_data(file_name, cols)
+        head = has_header(file_name)
+        encode_data(file_name, cols, head)
     elif command == 'hot_encode':
         cols = []
         for i in range(2, len(arg_vector)):

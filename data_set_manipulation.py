@@ -3,6 +3,8 @@ import pandas as pd
 from sklearn.preprocessing import LabelEncoder, OneHotEncoder
 from os import remove, rename
 from os.path import basename, isfile
+import numpy as np
+
 
 # The purpose of this class is mostly to modify data sets
 # for machine learning purposes. This includes functions such as follows:
@@ -19,6 +21,16 @@ from os.path import basename, isfile
 # 7- Shift Column (This is for moving the class column from last column to first column)
 # 8- Drop row if at column X the feature is Y
 # 9- Filter duplicate rows (Used by NSL-KDD from original KDD)
+
+
+def print_label_encoder(le, col):
+    with open("./labels.txt", "a+") as f:
+        f.write("For Column " + str(col) + '\n')
+        features = le.classes_
+        label = le.transform(features)
+        for k, v in zip(features, label):
+            f.write(k + "," + str(v) + '\n')
+        f.write('\n')
 
 
 # Makes a guess if the file has a header or not
@@ -171,19 +183,14 @@ def encode_data(file_name, col_to_encode, header=True):
 
     # In each column, get the unique columns
     for col in col_to_encode:
-        features = filter_duplicate_features(file_name, col, header)
+        features = filter_duplicate_features(file_name, col)
         lab = LabelEncoder()
-        label = lab.fit_transform(features)
+        lab.fit(features)
         label_map[col] = lab
         # Write out the labels.
-        with open("./labels.txt", "a+") as f:
-            f.write("For Column " + str(col) + '\n')
-            for k, v in zip(features, label):
-                f.write(k + "," + str(v) + '\n')
-            f.write('\n')
+        print_label_encoder(lab, col)
 
     # Iterate through file for each row and label the columns!
-
     with open(file_name) as read_data, open("./prep_" + b, "w+") as write_data:
         # If there is a header, skip the line!
         # Don't forget to write it to new file as well!
@@ -197,8 +204,7 @@ def encode_data(file_name, col_to_encode, header=True):
             # Now that I built the encoder, iterate columns
             for col in col_to_encode:
                 encoded = label_map[col]
-                updated = encoded.transform([parts[col]])
-                parts[col] = str(updated[0])
+                parts[col] = str(encoded.transform([parts[col]])[0])
 
             # Write the result
             new_line = ','.join(parts)
@@ -213,7 +219,8 @@ def encode_data(file_name, col_to_encode, header=True):
 
 
 # It needs to be returned as list to be used by label encoder!
-def filter_duplicate_features(file_name, col_number, header=True):
+def filter_duplicate_features(file_name, col_number):
+    header = has_header(file_name)
     s = set()
     with open(file_name, "r") as read:
         # If there is a header, don't include in encoding!
@@ -229,15 +236,24 @@ def filter_duplicate_features(file_name, col_number, header=True):
 def hot_encoder(file_name, encode_columns):
     b = basename(file_name)
     data = pd.read_csv(file_name)
+
+    # Label encode the whole column(s)!
+    for col in encode_columns:
+        le = LabelEncoder()
+        data.iloc[:, col] = le.fit_transform(data.iloc[:, col])
+        print(data)
+        # Save encoder mapping!
+        print_label_encoder(le, col)
+
+    # Now use the hot encoder! DIED HERE!
     one_hot_encoder = OneHotEncoder(categorical_features=encode_columns)
-    # You do need to use Label encoder!
-    # encode labels with value between 0 and n_classes - 1.
-    le = LabelEncoder()
-    new_data = data.apply(le.fit_transform)
-    # Now use the hot encoder!
-    data = one_hot_encoder.fit_transform(new_data).toarray()
+    print(str(filter_duplicate_features(file_name, 0)))
+    data = one_hot_encoder.fit_transform(data).toarray()
+    print(data)
+
     # Now you have the completed file, create the file in cwd!
-    data.to_csv('./prep_' + b, index=False)
+    # pd.DataFrame(data).to_csv('./prep_' + b, index=False)
+    np.savetxt('./prep_' + b, data, fmt="%s", delimiter=",")
     if isfile('./' + b):
         remove('./' + b)
     rename('./prep_' + b, b)

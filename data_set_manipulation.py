@@ -23,13 +23,26 @@ import numpy as np
 # 9- Filter duplicate rows (Used by NSL-KDD from original KDD)
 
 
+def load_label_encoder(loader):
+    categories = []
+    with open(loader, "r") as f:
+        for line in f:
+            line = line.rstrip()
+            # If , there is <Key, Value>, Just get the key!
+            if ',' in line:
+                categories.append(line.split()[0])
+    le = LabelEncoder()
+    le.fit(categories)
+    return le
+
+
 def print_label_encoder(le, col):
     with open("./labels.txt", "a+") as f:
         f.write("For Column " + str(col) + '\n')
         features = le.classes_
         label = le.transform(features)
         for k, v in zip(features, label):
-            f.write(k + "," + str(v) + '\n')
+            f.write(str(k) + "," + str(v) + '\n')
         f.write('\n')
 
 
@@ -49,21 +62,6 @@ def has_header(file_name):
                     counter += 1
             break
     return num_col == counter
-
-
-# This is because the mini hand-writing data-set doesn't have the label prepended!
-def append_column(file_name='./train_3.txt', label='3'):
-    b = basename(file_name)
-    with open(file_name) as read_data, open('./prep_' + b, 'w+') as write_data:
-        for line in read_data:
-            write_data.write(label + ',' + line)
-
-    # Now you have the completed file, create the file in cwd!
-    # You can over-write if the file exists in CWD!
-    if isfile('./' + b):
-        remove('./' + b)
-    rename('./prep_' + b, b)
-    print("Finished appending the column!")
 
 
 # This is because the damn kdd does NOT have the headers pre-made...
@@ -232,14 +230,22 @@ def hot_encoder(file_name, encode_columns):
 
     # Now use the hot encoder! BE SURE TO NOT TOUCH THE CLASS LABEL!
     header_names = ','.join(list(data.columns))
-    classes = data.iloc[0, :]
+    classes = data.iloc[:, 0]
+    features = data.iloc[:, 1:]
+    print(features)
 
+    # NOW I MUST SHIFT THE COLUMNS ENCODED BY - 1
+    for i in range(len(encode_columns)):
+        if encode_columns[i] != 0:
+            encode_columns[i] = encode_columns[i] - 1
+        else:
+            del encode_columns[i]
     one_hot_encoder = OneHotEncoder(categorical_features=encode_columns)
-    data = one_hot_encoder.fit_transform(data.iloc[:, 1:]).toarray()
-
+    data = one_hot_encoder.fit_transform(features).toarray()
+    updated_data = np.concatenate((classes, features), axis=1)
+    print(updated_data)
     # Now you have the completed file, create the file in cwd!
-    final_np = np.append(classes, data, axis=1)
-    np.savetxt('./prep_' + b, X=final_np, fmt="%s", delimiter=",", header=header_names)
+    np.savetxt('./prep_' + b, updated_data, fmt="%s", delimiter=",", header=header_names)
     if isfile('./' + b):
         remove('./' + b)
     rename('./prep_' + b, b)
@@ -333,6 +339,7 @@ def call_functions(arg_vector):
         cols = []
         for i in range(2, len(arg_vector), 2):
             start = int(arg_vector[i])
+            # The +1 is critical to make it inclusive both ends!
             end = int(arg_vector[i + 1]) + 1
             cols.append((start, end))
         drop_columns(file_name, cols)
@@ -348,7 +355,10 @@ def call_functions(arg_vector):
     elif command == 'hot_encode':
         cols = []
         for i in range(2, len(arg_vector)):
-            cols.append(int(arg_vector[i]))
+            # Will need a -1 because the class is always the first column
+            # So, when fitting, it will be out of scope if it is the last feature to hot encode!
+            col = int(arg_vector[i])
+            cols.append(col)
         hot_encoder(file_name, cols)
     # This is just in case you do have classes in first column
     elif command == 'shift':

@@ -242,10 +242,10 @@ def hot_encoder(file_name, encode_columns):
             del encode_columns[i]
     one_hot_encoder = OneHotEncoder(categorical_features=encode_columns)
     data = one_hot_encoder.fit_transform(features).toarray()
-    updated_data = np.concatenate((classes, features), axis=1)
-    print(updated_data)
+    # updated_data = np.concatenate((classes, data), axis=1)
+    # print(updated_data)
     # Now you have the completed file, create the file in cwd!
-    np.savetxt('./prep_' + b, updated_data, fmt="%s", delimiter=",", header=header_names)
+    np.savetxt('./prep_' + b, data, fmt="%s", delimiter=",", header=header_names)
     if isfile('./' + b):
         remove('./' + b)
     rename('./prep_' + b, b)

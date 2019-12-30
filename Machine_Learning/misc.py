@@ -1,6 +1,7 @@
 import itertools
 import numpy as np
 import random
+import Collections
 from os import mkdir, path, remove, listdir
 from os.path import isfile, join
 from shutil import rmtree
@@ -16,6 +17,7 @@ from sklearn.metrics import accuracy_score, classification_report
 from sklearn.metrics import precision_score, recall_score, f1_score, precision_recall_fscore_support
 from matplotlib.cm import get_cmap
 from joblib import load
+from math import sqrt
 
 
 # After a lot of tinkering around, it is always best to have your classes be strings
@@ -353,6 +355,10 @@ def make_confusion_matrix(y_true, y_predict, clf, clf_name, directory="./Confusi
 
 
 def load_and_test(test_x, test_y, directory="./Classifiers/", extra_test=False):
+    if not path.exists("./Classifiers") or not path.isdir("./Classifiers"):
+        print("The Classifiers folder is NOT found! You should build the Classifiers first!")
+        return
+
     files = [f for f in listdir(directory) if isfile(join(directory, f))]
     for f in files:
         clf = load(directory + f)
@@ -400,15 +406,14 @@ def classifier_test(clf, clf_name, test_x, test_y, extra_test=False):
     plt.close()
 
 
-def start_and_clean_up(test_x, test_y):
+def start():
     try:
         # Now give user an option to delete everything and start
         # OR discontinue
         if existing_files():
             # Read input from user
-            args = input("Files Found! Delete them and run script? If so, press CTRL-D.\n"
-                         "Otherwise, press any key to exit\n"
-                         "Press CTRL + C to run tests with all Classifiers in Classifers directory\n")
+            args = input("Files Found! Delete them and run script? If so, insert EOF!\n"
+                         "Otherwise, press any key to exit now!\n")
             if args is not None:
                 exit(0)
         else:
@@ -436,9 +441,6 @@ def start_and_clean_up(test_x, test_y):
         mkdir("./Cross_Validation")
         mkdir("./ROC")
         mkdir("./Classifiers")
-    except KeyboardInterrupt:
-        load_and_test(test_x, test_y)
-        exit(0)
 
 
 def existing_files():
@@ -457,6 +459,116 @@ def existing_files():
     if path.exists("./ROC") and path.isdir("./ROC"):
         return True
 
-    # if path.exists("./Classifiers") and path.isdir("./Classifiers"):
-    #    return True
+    if path.exists("./Classifiers") and path.isdir("./Classifiers"):
+        return True
     return False
+
+
+# -----------------Mesko's Column statistics functions------------------------------------------------
+
+
+def stat_column(data_set, label, column_number=2):
+    freq_n = {}
+    freq_a = {}
+    with open(data_set, "r") as f:
+        for line in f:
+            try:
+                # Get the right column
+                row = line.split(",")
+                key = row[column_number]
+                if row[41] != label:
+                    if key in freq_a:
+                        freq_a[key] = freq_a[key] + 1
+                    else:
+                        freq_a[key] = 1
+                else:
+                    if key in freq_n:
+                        freq_n[key] = freq_n[key] + 1
+                    else:
+                        freq_n[key] = 1
+
+            except ValueError:
+                exit("NAN FOUND!")
+
+    # Using frequency map compute mean and std dev
+    print(mean_freq(freq_n))
+    print(std_dev_freq(freq_n))
+
+    order_freq_n = collections.OrderedDict(sorted(freq_n.items().__iter__()))
+    order_freq_a = collections.OrderedDict(sorted(freq_a.items().__iter__()))
+    if len(freq_a) == 0:
+        frequency_histogram(order_freq_n)
+    else:
+        dual_frequency_histogram(order_freq_n, order_freq_a)
+
+
+# Purpose: Just get the stats. NO HISTOGRAM
+def stat_one_column(data_set, label, column_number=2):
+    freq_n = {}
+    with open(data_set, "r") as f:
+        for line in f:
+            try:
+                # Get the right column
+                row = line.split(",")
+                key = row[column_number]
+                if row[0] == label:
+                    if key in freq_n:
+                        freq_n[key] = freq_n[key] + 1
+                    else:
+                        freq_n[key] = 1
+                else:
+                    continue
+            except ValueError:
+                exit("NAN FOUND!")
+    # print contents
+    u = mean_freq(freq_n)
+    s = std_dev_freq(freq_n, u)
+
+    # To make it easier to figure out most frequent feature value
+    # sort the map by value!
+    sorted_freq = OrderedDict(sorted(freq_n.items().__iter__(), key=itemgetter(1)))
+
+    with open("stat_result_" + label + ".txt", "a+") as fd:
+        fd.write("-----for Column " + str(column_number) + "-----\n")
+        fd.write(print_map(sorted_freq) + '\n')
+        fd.write("The mean is: " + str(u) + '\n')
+        fd.write("The standard deviation is: " + str(s) + '\n')
+
+
+def mean_freq(freq):
+    n = sum(list(freq.values()))
+    miu = 0
+    for key, value in freq.items():
+        miu = miu + float(key) * value
+    miu = miu/n
+    return miu
+
+
+def print_map(hash_map, per_row=5):
+    line_counter = 1
+    answer = "{\n"
+    for k, v in hash_map.items():
+        if line_counter % per_row == 0:
+            answer = answer + '\n'
+        line = str(k) + ":" + str(v) + " "
+        answer = answer + line
+        line_counter += 1
+    answer = answer + "\n}"
+    return answer
+
+
+def std_dev_freq(freq, miu=None):
+    if miu is None:
+        miu = mean_freq(freq)
+    n = sum(list(freq.values()))
+    sigma = 0
+    for val, f in freq.items():
+        sigma += f * (float(val) - miu) * (float(val) - miu)
+    sigma = sigma/n
+    sigma = sqrt(sigma)
+    return sigma
+
+
+def stats_columns(file_name, label):
+    for col in range(0, 29, 1):
+        stat_one_column(file_name, label, column_number=col)

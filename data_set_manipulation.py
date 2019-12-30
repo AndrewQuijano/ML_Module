@@ -177,39 +177,21 @@ def merge_csv(file_name):
 
 
 # Given a file with CSV, use regular Label encoding!
-def encode_data(file_name, col_to_encode, header=True):
+def encode_data(file_name, col_to_encode):
     b = basename(file_name)
-    label_map = {}
+    if has_header(file_name):
+        data = pd.read_csv(file_name)
+    else:
+        data = pd.read_csv(file_name, header=None)
 
     # In each column, get the unique columns
     for col in col_to_encode:
-        features = filter_duplicate_features(file_name, col)
-        lab = LabelEncoder()
-        lab.fit(features)
-        label_map[col] = lab
-        # Write out the labels.
-        print_label_encoder(lab, col)
+        le = LabelEncoder()
+        data.iloc[:, col] = le.fit_transform(data.iloc[:, col])
+        # Save encoder mapping!
+        print_label_encoder(le, col)
+    data.to_csv('./prep_' + b, index=False)
 
-    # Iterate through file for each row and label the columns!
-    with open(file_name) as read_data, open("./prep_" + b, "w+") as write_data:
-        # If there is a header, skip the line!
-        # Don't forget to write it to new file as well!
-        if header:
-            write_data.write(read_data.readline())
-
-        # Parse everything else!
-        for line in read_data:
-            parts = line.rstrip().split(',')
-
-            # Now that I built the encoder, iterate columns
-            for col in col_to_encode:
-                encoded = label_map[col]
-                parts[col] = str(encoded.transform([parts[col]])[0])
-
-            # Write the result
-            new_line = ','.join(parts)
-            write_data.write(new_line + '\n')
-            write_data.flush()
     # Now you have the completed file, create the file in cwd!
     # You can over-write if the file exists in CWD!
     if isfile('./' + b):
@@ -233,27 +215,31 @@ def filter_duplicate_features(file_name, col_number):
     return list(s)
 
 
+# IT IS FUCKING CRITICAL THAT CLASS COLUMN IS ALWAYS ON FIRST COLUMN
 def hot_encoder(file_name, encode_columns):
     b = basename(file_name)
-    data = pd.read_csv(file_name)
+    if has_header(file_name):
+        data = pd.read_csv(file_name)
+    else:
+        data = pd.read_csv(file_name, header=None)
 
     # Label encode the whole column(s)!
     for col in encode_columns:
         le = LabelEncoder()
         data.iloc[:, col] = le.fit_transform(data.iloc[:, col])
-        print(data)
         # Save encoder mapping!
         print_label_encoder(le, col)
 
-    # Now use the hot encoder! DIED HERE!
+    # Now use the hot encoder! BE SURE TO NOT TOUCH THE CLASS LABEL!
+    header_names = ','.join(list(data.columns))
+    classes = data.iloc[0, :]
+
     one_hot_encoder = OneHotEncoder(categorical_features=encode_columns)
-    print(str(filter_duplicate_features(file_name, 0)))
-    data = one_hot_encoder.fit_transform(data).toarray()
-    print(data)
+    data = one_hot_encoder.fit_transform(data.iloc[:, 1:]).toarray()
 
     # Now you have the completed file, create the file in cwd!
-    # pd.DataFrame(data).to_csv('./prep_' + b, index=False)
-    np.savetxt('./prep_' + b, data, fmt="%s", delimiter=",")
+    final_np = np.append(classes, data, axis=1)
+    np.savetxt('./prep_' + b, X=final_np, fmt="%s", delimiter=",", header=header_names)
     if isfile('./' + b):
         remove('./' + b)
     rename('./prep_' + b, b)
@@ -358,8 +344,7 @@ def call_functions(arg_vector):
         cols = []
         for i in range(2, len(arg_vector)):
             cols.append(int(arg_vector[i]))
-        head = has_header(file_name)
-        encode_data(file_name, cols, head)
+        encode_data(file_name, cols)
     elif command == 'hot_encode':
         cols = []
         for i in range(2, len(arg_vector)):

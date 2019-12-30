@@ -11,10 +11,6 @@ from Machine_Learning.misc import *
 
 from sys import argv, exit
 from sklearn.model_selection import KFold
-import collections
-from collections import OrderedDict
-from operator import itemgetter
-from math import sqrt
 from os.path import basename
 
 
@@ -50,7 +46,7 @@ def main():
         np.savetxt("./test_" + b, test,  fmt="%s", delimiter=",")
         exit(0)
 
-    elif len(argv) == 3:
+    elif len(argv) == 4:
         # Read the training and testing data-set
         # This assumes the class variable is on the first column!
         # It also assumes all data is numeric!
@@ -66,15 +62,18 @@ def main():
             print("Testing Set Not Found or invalid file extension!")
             exit(0)
     else:
-        print("Usage: python3 main_driver.py <train-set> <test-set>")
+        print("Usage: python3 main_driver.py <train-set> <test-set> <True/False Speed>")
         exit(0)
 
     # First thing, Check if there was a previous run or not!
-    # Then the user chooses to delete and run or not
-    start_and_clean_up(test_x, test_y)
+    # Then the user chooses to delete and run the script!
+    start()
 
-    # Now train ALL classifiers!
-    clf_list(train_x, train_y, False)
+    # Now train ALL classifiers and dump the classifiers!
+    if argv[3] == '0':
+        clf_list(train_x, train_y, False)
+    else:
+        clf_list(train_x, train_y, True)
 
     # Run Testing Now
     load_and_test(test_x, test_y)
@@ -134,6 +133,7 @@ def clf_list(train_x, train_y, speed):
 # SINCE U KNOW THE ATTACKS ARE BY SPECIFIC IP, USE THAT TO LABEL
 # PLAY WITH COLUMN 28-32
 # GOAL: LABEL IS ON FIRST COLUMN
+# MOVE THIS TO KDD-PREPROCESSOR
 def label_testing_set(file_path, output):
     # From fuzzer I know the mapping of IP and attack
     # 192.168.147.152 is IP of Client running Kali Linux
@@ -204,112 +204,16 @@ def label_testing_set(file_path, output):
             write.flush()
 
 
-def stat_column(data_set, label, column_number=2):
-    freq_n = {}
-    freq_a = {}
-    with open(data_set, "r") as f:
-        for line in f:
-            try:
-                # Get the right column
-                row = line.split(",")
-                key = row[column_number]
-                if row[41] != label:
-                    if key in freq_a:
-                        freq_a[key] = freq_a[key] + 1
-                    else:
-                        freq_a[key] = 1
-                else:
-                    if key in freq_n:
-                        freq_n[key] = freq_n[key] + 1
-                    else:
-                        freq_n[key] = 1
-
-            except ValueError:
-                exit("NAN FOUND!")
-
-    # Using frequency map compute mean and std dev
-    # print(mean_freq(freq_n))
-    # print(std_dev_freq(freq_n))
-
-    order_freq_n = collections.OrderedDict(sorted(freq_n.items().__iter__()))
-    order_freq_a = collections.OrderedDict(sorted(freq_a.items().__iter__()))
-    if len(freq_a) == 0:
-        frequency_histogram(order_freq_n)
-    else:
-        dual_frequency_histogram(order_freq_n, order_freq_a)
-
-
-# Purpose: Just get the stats. NO HISTOGRAM
-def stat_one_column(data_set, label, column_number=2):
-    freq_n = {}
-    with open(data_set, "r") as f:
-        for line in f:
-            try:
-                # Get the right column
-                row = line.split(",")
-                key = row[column_number]
-                if row[0] == label:
-                    if key in freq_n:
-                        freq_n[key] = freq_n[key] + 1
-                    else:
-                        freq_n[key] = 1
-                else:
-                    continue
-            except ValueError:
-                exit("NAN FOUND!")
-    # print contents
-    u = mean_freq(freq_n)
-    s = std_dev_freq(freq_n, u)
-
-    # To make it easier to figure out most frequent feature value
-    # sort the map by value!
-    sorted_freq = OrderedDict(sorted(freq_n.items().__iter__(), key=itemgetter(1)))
-
-    with open("stat_result_" + label + ".txt", "a+") as fd:
-        fd.write("-----for Column " + str(column_number) + "-----\n")
-        fd.write(print_map(sorted_freq) + '\n')
-        fd.write("The mean is: " + str(u) + '\n')
-        fd.write("The standard deviation is: " + str(s) + '\n')
-
-
-def mean_freq(freq):
-    n = sum(list(freq.values()))
-    miu = 0
-    for key, value in freq.items():
-        miu = miu + float(key) * value
-    miu = miu/n
-    return miu
-
-
-def print_map(hash_map, per_row=5):
-    line_counter = 1
-    answer = "{\n"
-    for k, v in hash_map.items():
-        if line_counter % per_row == 0:
-            answer = answer + '\n'
-        line = str(k) + ":" + str(v) + " "
-        answer = answer + line
-        line_counter += 1
-    answer = answer + "\n}"
-    return answer
-
-
-def std_dev_freq(freq, miu=None):
-    if miu is None:
-        miu = mean_freq(freq)
-    n = sum(list(freq.values()))
-    sigma = 0
-    for val, f in freq.items():
-        sigma += f * (float(val) - miu) * (float(val) - miu)
-    sigma = sigma/n
-    sigma = sqrt(sigma)
-    return sigma
-
-
-def stats_columns(file_name, label):
-    for col in range(0, 29, 1):
-        stat_one_column(file_name, label, column_number=col)
-
-
 if __name__ == "__main__":
-    main()
+    if len(argv) < 2:
+        print("Usage: python3 main_driver.py test <test-set>")
+        print("Usage: python3 main_driver.py <train-set> <test-set> <True/False Speed>")
+        exit(0)
+
+    if argv[1] == 'test':
+        # Just run some test sets!
+        test_set_x, test_set_y = read_data(argv[2])
+        load_and_test(test_set_x, test_set_y)
+    else:
+        # Run full script with training and everything!
+        main()

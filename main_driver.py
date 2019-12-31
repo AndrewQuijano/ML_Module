@@ -42,7 +42,7 @@ def main():
         train = np.concatenate((train_y, train_x), axis=1)
         test = np.concatenate((test_y, test_x), axis=1)
 
-        np.savetxt("/.train_" + b, train, fmt="%s", delimiter=",")
+        np.savetxt("./train_" + b, train, fmt="%s", delimiter=",")
         np.savetxt("./test_" + b, test,  fmt="%s", delimiter=",")
         exit(0)
 
@@ -80,7 +80,7 @@ def main():
 
 
 def clf_list(train_x, train_y, speed):
-    kf = KFold(n_splits=10, shuffle=False)
+    kf = KFold(n_splits=5, shuffle=False)
     names = ["SVM_Linear",
              "SVM_Radial",
              "Random_Forest",

@@ -53,7 +53,7 @@ def svm_linear(train_x, train_y, n_fold=10, slow=False):
 
 
 def svc_linear_param_selection(x, y, n_folds=10, slow=False):
-    c = np.arange(0.1, 1, 0.1)
+    c = np.arange(0.1, 1.1, 0.1)
     param_grid = {'C': c}
     model = svm.SVC(kernel='linear', probability=True)
     if slow:

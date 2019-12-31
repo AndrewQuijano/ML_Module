@@ -1,7 +1,9 @@
 import itertools
+from operator import itemgetter
+
 import numpy as np
 import random
-import Collections
+import collections
 from os import mkdir, path, remove, listdir
 from os.path import isfile, join
 from shutil import rmtree

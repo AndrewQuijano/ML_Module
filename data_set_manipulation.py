@@ -220,6 +220,7 @@ def hot_encoder(file_name, encode_columns):
     b = basename(file_name)
     use_header = has_header(file_name)
     header_name = []
+    new_headers = []
     if use_header:
         data = pd.read_csv(file_name)
         header_name = list(data.columns)
@@ -234,7 +235,7 @@ def hot_encoder(file_name, encode_columns):
         le_map = print_label_encoder(le, col)
         if use_header:
             del header_name[col]
-            header_name.extend(le_map.keys())
+            new_headers.extend(le_map.keys())
 
     # Now use the hot encoder! BE SURE TO NOT TOUCH THE CLASS LABEL!
     classes = data.iloc[:, 0]
@@ -251,7 +252,13 @@ def hot_encoder(file_name, encode_columns):
     classes = classes.values.reshape(-1, 1)
     updated_data = np.concatenate((classes, data), axis=1)
     # Now you have the completed file, create the file in cwd!
-    np.savetxt('./prep_' + b, updated_data, fmt="%s", delimiter=",", header=','.join(header_name))
+    # final header
+    if use_header:
+        head = header_name[0] + ',' + ','.join(new_headers) + ',' + ','.join(header_name[1:])
+        print(header_name[0])
+    else:
+        head = None
+    np.savetxt('./prep_' + b, updated_data, fmt="%s", delimiter=",", header=head, comments='')
     if isfile('./' + b):
         remove('./' + b)
     rename('./prep_' + b, b)

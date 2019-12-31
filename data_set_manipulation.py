@@ -41,9 +41,11 @@ def print_label_encoder(le, col):
         f.write("For Column " + str(col) + '\n')
         features = le.classes_
         label = le.transform(features)
-        for k, v in zip(features, label):
+        label_map = dict(zip(features, label))
+        for k, v in label_map.items():
             f.write(str(k) + "," + str(v) + '\n')
         f.write('\n')
+    return label_map
 
 
 # Makes a guess if the file has a header or not
@@ -216,8 +218,11 @@ def filter_duplicate_features(file_name, col_number):
 # IT IS FUCKING CRITICAL THAT CLASS COLUMN IS ALWAYS ON FIRST COLUMN
 def hot_encoder(file_name, encode_columns):
     b = basename(file_name)
-    if has_header(file_name):
+    use_header = has_header(file_name)
+    header_name = []
+    if use_header:
         data = pd.read_csv(file_name)
+        header_name = list(data.columns)
     else:
         data = pd.read_csv(file_name, header=None)
 
@@ -226,13 +231,14 @@ def hot_encoder(file_name, encode_columns):
         le = LabelEncoder()
         data.iloc[:, col] = le.fit_transform(data.iloc[:, col])
         # Save encoder mapping!
-        print_label_encoder(le, col)
+        le_map = print_label_encoder(le, col)
+        if use_header:
+            del header_name[col]
+            header_name.extend(le_map.keys())
 
     # Now use the hot encoder! BE SURE TO NOT TOUCH THE CLASS LABEL!
-    header_names = ','.join(list(data.columns))
     classes = data.iloc[:, 0]
     features = data.iloc[:, 1:]
-    print(features)
 
     # NOW I MUST SHIFT THE COLUMNS ENCODED BY - 1
     for i in range(len(encode_columns)):
@@ -242,10 +248,10 @@ def hot_encoder(file_name, encode_columns):
             del encode_columns[i]
     one_hot_encoder = OneHotEncoder(categorical_features=encode_columns)
     data = one_hot_encoder.fit_transform(features).toarray()
-    # updated_data = np.concatenate((classes, data), axis=1)
-    # print(updated_data)
+    classes = classes.values.reshape(-1, 1)
+    updated_data = np.concatenate((classes, data), axis=1)
     # Now you have the completed file, create the file in cwd!
-    np.savetxt('./prep_' + b, data, fmt="%s", delimiter=",", header=header_names)
+    np.savetxt('./prep_' + b, updated_data, fmt="%s", delimiter=",", header=','.join(header_name))
     if isfile('./' + b):
         remove('./' + b)
     rename('./prep_' + b, b)

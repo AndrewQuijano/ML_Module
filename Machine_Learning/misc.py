@@ -63,33 +63,12 @@ def read_data_pandas(file_name):
     return x, y
 
 
-def summation(elements):
-    answer = 0
-    for i in range(len(elements)):
-        answer += elements[i]
-    return answer
-
-
 def is_valid_file_type(file):
     if not path.exists(file):
         return False
     if not path.isfile(file):
         return False
     return file.lower().endswith(('.csv', '.txt'))
-
-
-def mean(elements):
-    numerator = summation(elements)
-    return numerator/len(elements)
-
-
-def std_dev(elements):
-    miu = mean(elements)
-    variance = 0
-    for i in range(len(elements)):
-        variance += (elements[i] - miu) * (elements[i] - miu)
-    variance = variance/len(elements)
-    return variance
 
 
 # Input: A file with numbers with frequencies:

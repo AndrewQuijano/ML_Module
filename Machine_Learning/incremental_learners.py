@@ -13,37 +13,32 @@ def incremental_clf_list(train_x, train_y, speed=True):
     kf = KFold(n_splits=10)
     percep = tune_perceptron(train_x, train_y, kf, speed)
     sgd_class = tune_sgd_clf(train_x, train_y, kf, speed)
-    sgd_regress = tune_passive_aggressive_reg(train_x, train_y, kf, speed)
     pa_classifier = tune_passive_aggressive_clf(train_x, train_y, kf, speed)
-    pa_regress = tune_passive_aggressive_reg(train_x, train_y, kf, speed)
+    # sgd_regress = tune_passive_aggressive_reg(train_x, train_y, kf, speed)
+    # pa_regress = tune_passive_aggressive_reg(train_x, train_y, kf, speed)
 
     # Get Parameters now
     with open("results.txt", "a+") as fd:
         fd.write("[percep] Best Parameters: " + str(percep.best_params_) + '\n')
         fd.write("[sgd_class] Best Parameters: " + str(sgd_class.best_params_) + '\n')
         fd.write("[pa_classifier] Best Parameters: " + str(pa_classifier.best_params_) + '\n')
-        fd.write("[sgd_regress] Best Parameters: " + str(sgd_regress.best_params_) + '\n')
-        fd.write("[pa_regress] Best Parameters: " + str(pa_regress.best_params_) + '\n')
+        # fd.write("[sgd_regress] Best Parameters: " + str(sgd_regress.best_params_) + '\n')
+        # fd.write("[pa_regress] Best Parameters: " + str(pa_regress.best_params_) + '\n')
 
         fd.write("[percep] Training Score: " + str(percep.score(train_x, train_y)) + '\n')
         fd.write("[sgd_class] Training Score: " + str(sgd_class.score(train_x, train_y)) + '\n')
         fd.write("[pa_classifier] Training Score: " + str(pa_classifier.score(train_x, train_y)) + '\n')
-        fd.write("[sgd_regress] Training Score: " + str(sgd_regress.score(train_x, train_y)) + '\n')
-        fd.write("[pa_regress] Training Score: " + str(pa_regress.score(train_x, train_y)) + '\n')
-    # Once trained, should just dump now...
-    dump(sgd_class, "./Classifiers/sgd_class.joblib")
-    dump(sgd_regress, "./Classifiers/sgd_regress.joblib")
-    dump(pa_classifier, "./Classifiers/PA_class.joblib")
-    dump(pa_regress, "./Classifiers/PA_regress.joblib")
-    dump(percep, "./Classifiers/percep.joblib")
-    clf_list = [percep, sgd_class, pa_classifier, sgd_regress, pa_regress]
+        # fd.write("[sgd_regress] Training Score: " + str(sgd_regress.score(train_x, train_y)) + '\n')
+        # fd.write("[pa_regress] Training Score: " + str(pa_regress.score(train_x, train_y)) + '\n')
+
+    clf_list = [percep, sgd_class, pa_classifier ]
+    # Be prepared....Sometimes it does fail!
     try:
-        bayes = tune_bayes(train_x, train_y, kf, speed)
+        true_model = tune_bayes(train_x, train_y, kf, speed)
         with open("results.txt", "a+") as fd:
-            fd.write("[bayes] Best Parameters: " + str(bayes.best_params_) + '\n')
-            fd.write("[bayes] Training Score: " + str(bayes.score(train_x, train_y)) + '\n')
-            dump(bayes, "./Classifiers/i_bayes.joblib")
-        clf_list.append(bayes)
+            fd.write("[bayes] Best Parameters: " + str(true_model.best_params_) + '\n')
+            fd.write("[bayes] Training Score: " + str(true_model.score(train_x, train_y)) + '\n')
+        clf_list.append(true_model)
     except ValueError:
         pass
 
@@ -62,6 +57,7 @@ def tune_bayes(x, y, n_folds=10, slow=True):
     if slow:
         plot_grid_search(true_model.cv_results_, c, 'Multinomial_Bayes')
     print("Finished Tuning Multinomial Bayes...")
+    dump(true_model, "./Classifiers/" + type(model).__name__ + ".joblib")
     return true_model
 
 
@@ -78,6 +74,7 @@ def tune_perceptron(x, y, n_folds=10, slow=True):
     if slow:
         plot_grid_search(true_model.cv_results_, c, "Perceptron")
     print("Finished Tuning Perceptron...")
+    dump(true_model, "./Classifiers/" + type(model).__name__ + ".joblib")
     return true_model
 
 
@@ -94,6 +91,7 @@ def tune_sgd_clf(x, y, n_folds=10, slow=True):
     if slow:
         plot_grid_search(true_model.cv_results_, c, 'SGD_Classifier')
     print("Finished Tuning SGD Classifier...")
+    dump(true_model, "./Classifiers/" + type(model).__name__ + ".joblib")
     return true_model
 
 
@@ -110,6 +108,7 @@ def tune_sgd_reg(x, y, n_folds=10, slow=True):
     if slow:
         plot_grid_search(true_model.cv_results_, c, 'SGD_Regression')
     print("Finished Tuning SGD Regressor...")
+    dump(true_model, "./Classifiers/" + type(model).__name__ + ".joblib")
     return true_model
 
 
@@ -126,6 +125,7 @@ def tune_passive_aggressive_clf(x, y, n_folds=10, slow=True):
     if slow:
         plot_grid_search(true_model.cv_results_, c, 'Passive_Aggressive_CLF')
     print("Finished Tuning Passive Aggressive Classifier...")
+    dump(true_model, "./Classifiers/" + type(model).__name__ + ".joblib")
     return true_model
 
 
@@ -142,4 +142,5 @@ def tune_passive_aggressive_reg(x, y, n_folds=10, slow=True):
     if slow:
         plot_grid_search(true_model.cv_results_, c, 'Passive_Aggressive_Regression')
     print("Finished Tuning Passive Aggressive Regression...")
+    dump(true_model, "./Classifiers/" + type(model).__name__ + ".joblib")
     return true_model

@@ -13,7 +13,6 @@ def get_brain(train_x, train_y, n_fold=10, slow=False):
     clf = tune_brain(train_x, train_y, n_fold, slow)
     print("--- Best Parameter NN Generation: %s seconds ---" % (time.time() - start_time))
     print("[NN] Training Mean Test Score: " + str(clf.score(train_x, train_y)))
-    dump(clf, "./Classifiers/NN.joblib")
 
     with open("results.txt", "a") as my_file:
         my_file.write("[Neural_Network] Best Parameters: " + str(clf.best_params_) + '\n')
@@ -29,13 +28,15 @@ def tune_brain(train_x, train_y, n_fold=10, slow=False):
     solvers = ['lbfgs', 'adam']
     param_grid = {'alpha': alphas, 'hidden_layer_sizes': hidden_layer, 'solver': solvers}
 
+    clf = MLPClassifier(warm_start=False)
     if slow:
-        clf = GridSearchCV(MLPClassifier(warm_start=False), param_grid, n_jobs=-1, cv=n_fold)
+        best_clf = GridSearchCV(clf, param_grid, n_jobs=-1, cv=n_fold)
     else:
-        clf = RandomizedSearchCV(MLPClassifier(warm_start=False), param_grid, n_jobs=-1, cv=n_fold)
+        best_clf = RandomizedSearchCV(clf, param_grid, n_jobs=-1, cv=n_fold)
 
     clf.fit(train_x, train_y)
     plot_grid_search(clf, 'alpha', 'NN')
     plot_grid_search(clf, 'hidden_layer_sizes', 'NN')
     plot_grid_search(clf, 'solver', 'NN')
-    return clf
+    dump(best_clf, "./Classifiers/" + type(clf).__name__ + ".joblib")
+    return best_clf

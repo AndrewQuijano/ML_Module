@@ -254,7 +254,7 @@ def plot_grid_search(clf, name_param, clf_name, directory="./Cross_Validation/")
     ax.set_ylabel('CV Average Score', fontsize=16)
     ax.legend(loc="best", fontsize=15)
     ax.grid(True)
-    plt.savefig(str(directory + 'CV_Plot_' + clf_name + '_' + name_param + '.png'))
+    plt.savefig(str(directory + 'CV_' + clf_name + '_' + name_param + '.png'))
     plt.close()
 
 
@@ -341,9 +341,9 @@ def load_and_test(test_x, test_y, directory="./Classifiers/", extra_test=False):
         return
 
     files = [f for f in listdir(directory) if isfile(join(directory, f))]
-    for f in files:
-        clf = load(directory + f)
-        classifier_test(clf, f.split('.')[0], test_x, test_y, extra_test)
+    for clf_name in files:
+        clf = load(directory + clf_name)
+        classifier_test(clf, clf_name.split('.')[0], test_x, test_y, extra_test)
 
 
 def classifier_test(clf, clf_name, test_x, test_y, extra_test=False):
@@ -382,9 +382,13 @@ def classifier_test(clf, clf_name, test_x, test_y, extra_test=False):
 
     make_confusion_matrix(y_true=test_y, y_predict=y_hat, clf=clf, clf_name=clf_name)
     # Plot ROC Curve
-    sk_plt.metrics.plot_roc(test_y, clf.predict_proba(test_x))
-    plt.savefig(str('./ROC/' + clf_name + '_ROC.png'))
-    plt.close()
+    try:
+        sk_plt.metrics.plot_roc(test_y, clf.predict_proba(test_x))
+        plt.savefig(str('./ROC/' + clf_name + '_ROC.png'))
+        plt.close()
+    except AttributeError:
+        # NOTE: There is no ROC Curves for incremental learning algorithms!
+        pass
 
 
 def start():

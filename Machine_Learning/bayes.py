@@ -19,11 +19,12 @@ def naive_bayes(train_x, train_y, n_fold=10):
     clf_sigmoid.fit(train_x, train_y)
     print("--- Time to fit 3 Bayes Classifiers: %s seconds ---" % (time.time() - start_time))
 
+    print()
     with open("results.txt", "a+") as my_file:
         my_file.write("[NB] Training Mean Test Score: " + str(clf.score(train_x, train_y)) + '\n')
         my_file.write("[NB Isotonic] Training Mean Test Score: " + str(clf_isotonic.score(train_x, train_y)) + '\n')
         my_file.write("[NB Sigmoid] Training Mean Test Score: " + str(clf_sigmoid.score(train_x, train_y)) + '\n')
-    dump(clf, "./Classifiers/NB.joblib")
-    dump(clf_sigmoid, "./Classifiers/NB_Sigmoid.joblib")
-    dump(clf_isotonic, "./Classifiers/NB_Isotonic.joblib")
+    dump(clf, "./Classifiers/" + type(clf).__name__ + ".joblib")
+    dump(clf_sigmoid, "./Classifiers/" + type(clf_isotonic).__name__ + "_Isotonic.joblib")
+    dump(clf_isotonic, "./Classifiers/" + type(clf_sigmoid).__name__ + "_Sigmoid.joblib")
     return clf, clf_isotonic, clf_sigmoid

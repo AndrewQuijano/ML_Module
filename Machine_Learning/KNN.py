@@ -10,11 +10,12 @@ def get_knn(train_x, train_y, n_fold=10, slow=False):
     n = np.arange(3, 22, 2)
     start = time.time()
     # tune the hyper parameters via a randomized search
+    clf = KNeighborsClassifier()
     if slow:
-        best_knn = GridSearchCV(estimator=KNeighborsClassifier(), param_grid={'n_neighbors': n},
+        best_knn = GridSearchCV(estimator=clf, param_grid={'n_neighbors': n},
                                 n_jobs=-1, cv=n_fold, verbose=2)
     else:
-        best_knn = RandomizedSearchCV(estimator=KNeighborsClassifier(), param_distributions={'n_neighbors': n},
+        best_knn = RandomizedSearchCV(estimator=clf, param_distributions={'n_neighbors': n},
                                       n_jobs=-1, cv=n_fold, verbose=2)
     best_knn.fit(train_x, train_y)
     # Plot the CV-Curve
@@ -26,5 +27,5 @@ def get_knn(train_x, train_y, n_fold=10, slow=False):
     with open("results.txt", "a+") as my_file:
         my_file.write("[KNN] KNN-Best Parameters: " + str(best_knn.best_params_) + '\n')
         my_file.write("[KNN] Training Mean Test Score: " + str(best_knn.score(train_x, train_y)) + '\n')
-    dump(best_knn, "./Classifiers/KNN.joblib")
+    dump(best_knn, "./Classifiers/" + type(clf).__name__ + ".joblib")
     return best_knn

@@ -15,7 +15,6 @@ def get_forest(train_x, train_y, n_fold=10, slow=False):
     with open("results.txt", "a+") as my_file:
         my_file.write("[Random_Forest] Best Parameters: " + str(best_forest.best_params_) + '\n')
         my_file.write("[Random_Forest] Training Mean Test Score: " + str(best_forest.score(train_x, train_y)) + '\n')
-    dump(best_forest, "./Classifiers/Random_Forest.joblib")
     return best_forest
 
 
@@ -45,11 +44,11 @@ def tune_forest(train_features, train_labels, n_fold=10, slow=False):
 
     # Step 1: Use the random grid to search for best hyper parameters
     # First create the base model to tune
-    rf = RandomForestClassifier(warm_start=False, n_estimators=100)
+    clf = RandomForestClassifier(warm_start=False, n_estimators=100)
     if slow:
-        tune_rf = GridSearchCV(estimator=rf, param_grid=random_grid, cv=n_fold, n_jobs=-1, verbose=2)
+        tune_rf = GridSearchCV(estimator=clf, param_grid=random_grid, cv=n_fold, n_jobs=-1, verbose=2)
     else:
-        tune_rf = RandomizedSearchCV(estimator=rf, param_distributions=random_grid,
+        tune_rf = RandomizedSearchCV(estimator=clf, param_distributions=random_grid,
                                      cv=n_fold, n_jobs=-1, verbose=2)
     tune_rf.fit(train_features, train_labels)
 
@@ -58,4 +57,5 @@ def tune_forest(train_features, train_labels, n_fold=10, slow=False):
     plot_grid_search(tune_rf, 'max_depth', 'Random_Forest')
     plot_grid_search(tune_rf, 'min_samples_split', 'Random_Forest')
     plot_grid_search(tune_rf, 'min_samples_leaf', 'Random_Forest')
+    dump(tune_rf, "./Classifiers/" + type(clf).__name__ +".joblib")
     return tune_rf

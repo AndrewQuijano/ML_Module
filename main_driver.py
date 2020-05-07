@@ -8,6 +8,8 @@ from Machine_Learning.svm import *
 from Machine_Learning.decision_tree import *
 from Machine_Learning.neural_network import *
 from Machine_Learning.misc import *
+from Machine_Learning.incremental_learners import incremental_clf_list
+
 
 from sys import argv, exit
 from sklearn.model_selection import KFold
@@ -79,25 +81,13 @@ def main():
     load_and_test(test_x, test_y)
 
 
+# Build your classifiers from training data
 def clf_list(train_x, train_y, speed):
     kf = KFold(n_splits=5, shuffle=False)
-    names = ["SVM_Linear",
-             "SVM_Radial",
-             "Random_Forest",
-             "Logistic_Regression",
-             "KNN",
-             "LDA",
-             "QDA",
-             "Decision_tree",
-             "NB",
-             "NB_Isotonic",
-             "NB_Sigmoid"
-             ]
 
     # 1- SVM
     start_time = time.time()
-    svm_line_clf = svm_linear(train_x, train_y, kf, speed)
-    svm_rbf_clf = svm_rbf(train_x, train_y, kf, speed)
+    svm_clf = get_svm(train_x, train_y, kf, speed)
 
     # 2- Random Forest
     forest_clf = get_forest(train_x, train_y, kf, speed)
@@ -119,12 +109,14 @@ def clf_list(train_x, train_y, speed):
     tree = get_tree(train_x, train_y, kf, speed)
 
     # 8- Neural Networks
-    # brain_clf = get_brain(train_x, train_y, kf, speed)
-    classifiers = [svm_line_clf, svm_rbf_clf, forest_clf, logistic_clf, knn_clf,
-                   lda_clf, qda_clf, tree, bayes, bayes_isotonic, bayes_sigmoid
-                   ]
+    brain_clf = get_brain(train_x, train_y, kf, speed)
+    classifiers = [svm_clf, forest_clf, logistic_clf, knn_clf,
+                   lda_clf, qda_clf, tree, bayes, bayes_isotonic, bayes_sigmoid, brain_clf ]
+    # Get list of classifiers from Incremental class
+    incremental_clf_list(train_x, train_y, speed)
+
     print("---Time to complete training everything: %s seconds---" % (time.time() - start_time))
-    return names, classifiers
+    return classifiers
 
 
 if __name__ == "__main__":

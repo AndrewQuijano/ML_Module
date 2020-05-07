@@ -129,7 +129,7 @@ def drop_columns(file_name, keep_col_ranges):
 # So to store large data sets online, I just split them up by 500,000 row chunks
 # so <blah>/kdd.csv will become in cwd:
 # 1_kdd.csv, 2_kdd.csv, etc.
-def split_csv(file_name, size=500000):
+def split_csv(file_name, size=1000000):
     b = basename(file_name)
     line_number = 1
     file_part = 1

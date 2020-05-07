@@ -1,3 +1,2 @@
-shift ./kdd.csv
-keep_columns ./kdd.csv 0 9 21 41
-encode ./kdd.csv 2 3 4
+shift ./kddcup.csv
+split ./kddcup.csv

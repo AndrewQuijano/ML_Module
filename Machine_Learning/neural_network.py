@@ -34,9 +34,9 @@ def tune_brain(train_x, train_y, n_fold=10, slow=False):
     else:
         best_clf = RandomizedSearchCV(clf, param_grid, n_jobs=-1, cv=n_fold)
 
-    clf.fit(train_x, train_y)
-    plot_grid_search(clf, 'alpha', 'NN')
-    plot_grid_search(clf, 'hidden_layer_sizes', 'NN')
-    plot_grid_search(clf, 'solver', 'NN')
+    best_clf.fit(train_x, train_y)
+    plot_grid_search(best_clf, 'alpha', 'NN')
+    plot_grid_search(best_clf, 'hidden_layer_sizes', 'NN')
+    plot_grid_search(best_clf, 'solver', 'NN')
     dump(best_clf, "./Classifiers/" + type(clf).__name__ + ".joblib")
     return best_clf

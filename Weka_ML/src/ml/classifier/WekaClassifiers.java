@@ -7,6 +7,7 @@ import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+import ml.classifier.Misc_code;
 import weka.classifiers.Classifier;
 import weka.classifiers.Evaluation;
 import weka.classifiers.bayes.BayesNet;
@@ -17,8 +18,6 @@ import weka.classifiers.bayes.NaiveBayesUpdateable;
 import weka.classifiers.bayes.net.BIFReader;
 import weka.classifiers.bayes.net.BayesNetGenerator;
 import weka.classifiers.bayes.net.EditableBayesNet;
-import weka.classifiers.evaluation.NominalPrediction;
-import weka.classifiers.evaluation.Prediction;
 import weka.classifiers.functions.GaussianProcesses;
 import weka.classifiers.functions.LinearRegression;
 import weka.classifiers.functions.Logistic;
@@ -72,6 +71,7 @@ import weka.classifiers.trees.lmt.LogisticBase;
 import weka.core.Instances;
 import weka.core.converters.ArffLoader;
 import weka.core.SerializationHelper;
+
 
 public class WekaClassifiers
 {
@@ -297,9 +297,8 @@ public class WekaClassifiers
 	public static void main(String[] args) throws Exception 
 	{
 		// Load Training Data
-		//Instances training_data = read_arff_file("C:\\Users\\Andrew\\Desktop\\iris.arff");
-		Instances training_data = read_arff_file("C:\\Users\\Andrew\\Desktop\\NSL-KDD\\KDDTrain+.arff");
-		Instances test_data = read_arff_file("C:\\Users\\Andrew\\Desktop\\NSL-KDD\\KDDTest+.arff");
+		Instances training_data = read_arff_file("C:\\Users\\Andrew\\Desktop\\ML_Module\\Weka_ML\\src\\ml\\classifier\\KDDTrain+.arff");
+		Instances test_data = read_arff_file("C:\\Users\\Andrew\\Desktop\\ML_Module\\Weka_ML\\src\\ml\\classifier\\KDDTest+.arff");
 		
 		// Cross Validate each one
 		Evaluation [] evals = new Evaluation[NUM_CLASSIFIERS];
@@ -337,7 +336,7 @@ public class WekaClassifiers
 		   
 			// write classifier to file
 		    System.out.println(models[i].getClass().getSimpleName());
-		    writeClassifier(models[i].getClass().getSimpleName() + ".model", hi);
+		    Misc_code.writeClassifier(models[i].getClass().getSimpleName() + ".joblib", hi);
 		    
 		    // print CV
 		    String [] x = hi.getBestClassifierOptions();
@@ -362,32 +361,5 @@ public class WekaClassifiers
 			System.out.println(evals[i].toSummaryString());
 		}
 		
-	}
-	
-    public static void WriteObjectToFile(Object serObj, String filepath) 
-    {	 
-        try
-        {
-        	FileOutputStream fileOut = new FileOutputStream(filepath);
-            ObjectOutputStream objectOut = new ObjectOutputStream(fileOut);
-            objectOut.writeObject(serObj);
-            objectOut.close();
-            System.out.println("The Object  was succesfully written to a file");
-        }
-        catch (Exception ex) 
-        {
-            ex.printStackTrace();
-        }
-    }
-    
-    public static void writeClassifier(String path, Classifier clf) throws Exception
-    {
-    	SerializationHelper.write(path, clf);
-    }
-    
-    public static Classifier loadClassifier(String path) throws Exception
-    {
-    	Classifier cls = (Classifier) SerializationHelper.read(path);
-    	return cls;
-    }
+	}    
 }

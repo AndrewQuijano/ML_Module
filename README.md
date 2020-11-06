@@ -1,5 +1,16 @@
 # ML_Module
 I will be using sci-kit learn for various projects such as my IDS project, Indoor Localization Project and potentially others. To avoid confusing myself, I will place the modules here so I can just import into those projects.
+Please feel free to use this. If you run the main_driver.py script it will generate the following
+- A folder containing confusion matricies
+- A classification report
+- Cross Validation plots of paramters vs score
+- A textfile containing the training/testing score of all models tested
+- printing the classifiers into a .joblib format so you can easily load/migrate the completed classifier.
+
+I have provided the handwriting dataset used in my Statiscal Machine Learning class to provide examples how to use this.
+
+## Installation
+If you are on a Linux environment run the **install.sh** script to install all dependancies for you.
 
 With regards to the data_manipulation.py script
 
@@ -16,10 +27,24 @@ NOTE: All new files will be written to the current working directory of the shel
 
 With regards to main_driver.py, it uses all the sci-kit learn classifiers and generates a text file with scores, Confusion Matricies, Classification Reports, etc.
 
+## Usage
+**data manipulation**
 
-With regards to incremental learning, it has just using server.py. 
-client.py was to test getting training data from a remote source!
+**main driver**
+```python
 
-TODO:
-1- Finish testing Incremental learning to process data from an external client to train an incremental model.
-2- Build some other Classifiers from the Weka Library that is not in scikit-learn (e. g. Weka has 
+```
+
+
+## Contributing
+Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
+
+## Authors and acknowledgment
+Code Author: Andrew Quijano
+This was started from my final project from Statistical Machine Learning. 
+
+## License
+[MIT](https://choosealicense.com/licenses/mit/)
+
+## Project status
+1- Build some other Classifiers from the Weka Library that is not in scikit-learn and provide similar functionality as with Python.

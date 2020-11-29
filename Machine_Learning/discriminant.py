@@ -12,7 +12,7 @@ def discriminant_line(train_x, train_y):
 
     with open("results.txt", "a+") as my_file:
         my_file.write("[LDA] Training Mean Test Score: " + str(clf.score(train_x, train_y)) + '\n')
-    dump(clf, "./Classifiers/" + type(clf).__name__  + ".joblib")
+    dump(clf, "./Classifiers/" + type(clf).__name__ + ".joblib")
     return clf
 
 
@@ -25,5 +25,5 @@ def discriminant_quad(train_x, train_y):
 
     with open("results.txt", "a+") as my_file:
         my_file.write("[QDA] Training Mean Test Score: " + str(clf.score(train_x, train_y)) + '\n')
-    dump(clf, "./Classifiers/" + type(clf).__name__  +".joblib")
+    dump(clf, "./Classifiers/" + type(clf).__name__ + ".joblib")
     return clf

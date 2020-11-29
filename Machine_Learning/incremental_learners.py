@@ -5,7 +5,6 @@ from sklearn.linear_model import Perceptron, PassiveAggressiveClassifier, SGDCla
 from sklearn.linear_model import PassiveAggressiveRegressor, SGDRegressor
 from joblib import dump
 from sklearn.model_selection import KFold
-
 from .misc import plot_grid_search
 
 
@@ -31,7 +30,7 @@ def incremental_clf_list(train_x, train_y, speed=True):
         # fd.write("[sgd_regress] Training Score: " + str(sgd_regress.score(train_x, train_y)) + '\n')
         # fd.write("[pa_regress] Training Score: " + str(pa_regress.score(train_x, train_y)) + '\n')
 
-    clf_list = [percep, sgd_class, pa_classifier ]
+    clf_list = [percep, sgd_class, pa_classifier]
     # Be prepared....Sometimes it does fail!
     try:
         true_model = tune_bayes(train_x, train_y, kf, speed)
@@ -96,7 +95,7 @@ def tune_sgd_clf(x, y, n_folds=10, slow=True):
 
 
 def tune_sgd_reg(x, y, n_folds=10, slow=True):
-    print("Tuning SGD Regressor...")
+    print("Tuning SGD Regression...")
     c = np.arange(0.0001, 0.01, 0.00001)
     param_grid = {'alpha': c}
     model = SGDRegressor(warm_start=True, tol=1e-3)
@@ -107,7 +106,7 @@ def tune_sgd_reg(x, y, n_folds=10, slow=True):
     true_model.fit(x, y)
     if slow:
         plot_grid_search(true_model.cv_results_, c, 'SGD_Regression')
-    print("Finished Tuning SGD Regressor...")
+    print("Finished Tuning SGD Regression...")
     dump(true_model, "./Classifiers/" + type(model).__name__ + ".joblib")
     return true_model
 

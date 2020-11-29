@@ -30,7 +30,7 @@ def tune_tree(train_x, train_y, n_fold=10, slow=False, n_iter_search=10):
     plot_grid_search(tree, 'min_samples_split', 'Decision_Tree')
     plot_grid_search(tree, 'min_samples_leaf', 'Decision_Tree')
     plot_grid_search(tree, 'max_depth', 'Decision_Tree')
-    dump(tree, "./Classifiers/" + type(clf).__name__ +".joblib")
+    dump(tree, "./Classifiers/" + type(clf).__name__ + ".joblib")
     return tree
 
 

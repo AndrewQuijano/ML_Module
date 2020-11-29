@@ -24,7 +24,7 @@ def tune_svm(train_x, train_y, n_folds=10, slow=False):
     random_grid = {
         'C': c,
         'gamma': gammas,
-        'kernel' : ["rbf", "linear", "poly", "sigmoid"]
+        'kernel': ["rbf", "linear", "poly", "sigmoid"]
     }
     model = svm.SVC(probability=True)
     if slow:

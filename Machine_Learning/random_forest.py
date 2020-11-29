@@ -57,5 +57,5 @@ def tune_forest(train_features, train_labels, n_fold=10, slow=False):
     plot_grid_search(tune_rf, 'max_depth', 'Random_Forest')
     plot_grid_search(tune_rf, 'min_samples_split', 'Random_Forest')
     plot_grid_search(tune_rf, 'min_samples_leaf', 'Random_Forest')
-    dump(tune_rf, "./Classifiers/" + type(clf).__name__ +".joblib")
+    dump(tune_rf, "./Classifiers/" + type(clf).__name__ + ".joblib")
     return tune_rf

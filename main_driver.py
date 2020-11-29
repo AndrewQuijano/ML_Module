@@ -10,7 +10,6 @@ from Machine_Learning.neural_network import *
 from Machine_Learning.misc import *
 from Machine_Learning.incremental_learners import incremental_clf_list
 
-
 from sys import argv, exit
 from sklearn.model_selection import KFold
 from os.path import basename
@@ -74,8 +73,11 @@ def main():
     # Now train ALL classifiers and dump the classifiers!
     if argv[3] == '0':
         clf_list(train_x, train_y, False)
-    else:
+    elif argv[3] == '1':
         clf_list(train_x, train_y, True)
+    else:
+        print("Usage: python3 main_driver.py <train-set> <test-set> <True/False Speed>")
+        exit(0)
 
     # Run Testing Now
     load_and_test(test_x, test_y)
@@ -111,7 +113,7 @@ def clf_list(train_x, train_y, speed):
     # 8- Neural Networks
     brain_clf = get_brain(train_x, train_y, kf, speed)
     classifiers = [svm_clf, forest_clf, logistic_clf, knn_clf,
-                   lda_clf, qda_clf, tree, bayes, bayes_isotonic, bayes_sigmoid, brain_clf ]
+                   lda_clf, qda_clf, tree, bayes, bayes_isotonic, bayes_sigmoid, brain_clf]
     # Get list of classifiers from Incremental class
     incremental_clf_list(train_x, train_y, speed)
 
@@ -121,6 +123,7 @@ def clf_list(train_x, train_y, speed):
 
 if __name__ == "__main__":
     if len(argv) < 2:
+        print("Usage: python3 main_driver.py data-set")
         print("Usage: python3 main_driver.py test <test-set>")
         print("Usage: python3 main_driver.py <train-set> <test-set> <True/False Speed>")
         exit(0)

@@ -72,9 +72,11 @@ def main():
 
     # Now train ALL classifiers and dump the classifiers!
     if argv[3] == '0':
-        clf_list(train_x, train_y, False)
+        print("Run GridSearch among all parameters")
+        clf_list(train_x, train_y, is_slow=False)
     elif argv[3] == '1':
-        clf_list(train_x, train_y, True)
+        print("Run RandomizedSearch among all parameters")
+        clf_list(train_x, train_y, is_slow=True)
     else:
         print("Usage: python3 main_driver.py <train-set> <test-set> <True/False Speed>")
         exit(0)
@@ -84,21 +86,21 @@ def main():
 
 
 # Build your classifiers from training data
-def clf_list(train_x, train_y, speed):
+def clf_list(train_x, train_y, is_slow=False):
     kf = KFold(n_splits=5, shuffle=False)
 
     # 1- SVM
     start_time = time.time()
-    svm_clf = get_svm(train_x, train_y, kf, speed)
+    svm_clf = get_svm(train_x, train_y, kf, is_slow)
 
     # 2- Random Forest
-    forest_clf = get_forest(train_x, train_y, kf, speed)
+    forest_clf = get_forest(train_x, train_y, kf, is_slow)
 
     # 3- Logistic Regression
-    logistic_clf = get_logistic(train_x, train_y, kf, speed)
+    logistic_clf = get_logistic(train_x, train_y, kf, is_slow)
 
     # 4- KNN
-    knn_clf = get_knn(train_x, train_y, kf, speed)
+    knn_clf = get_knn(train_x, train_y, kf, is_slow)
 
     # 5- LDA/QDA
     lda_clf = discriminant_line(train_x, train_y)
@@ -108,14 +110,14 @@ def clf_list(train_x, train_y, speed):
     bayes, bayes_isotonic, bayes_sigmoid = naive_bayes(train_x, train_y)
 
     # 7- Decision Tree
-    tree = get_tree(train_x, train_y, kf, speed)
+    tree = get_tree(train_x, train_y, kf, is_slow)
 
     # 8- Neural Networks
-    brain_clf = get_brain(train_x, train_y, kf, speed)
+    brain_clf = get_brain(train_x, train_y, kf, is_slow)
     classifiers = [svm_clf, forest_clf, logistic_clf, knn_clf,
                    lda_clf, qda_clf, tree, bayes, bayes_isotonic, bayes_sigmoid, brain_clf]
     # Get list of classifiers from Incremental class
-    incremental_clf_list(train_x, train_y, speed)
+    incremental_clf_list(train_x, train_y, is_slow)
 
     print("---Time to complete training everything: %s seconds---" % (time.time() - start_time))
     return classifiers

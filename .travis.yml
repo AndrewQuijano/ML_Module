@@ -1,13 +1,19 @@
 language: python
+os: linux
+dist: focal
 python:
-  - '3.6'
-  - '3.7'
-  - '3.8'
+- '3.6'
+- '3.7'
+- '3.8'
+- '3.9'
 
 # command to install dependancies
 install:
-  - sudo bash install.sh
+- pip install coverage
+- pip install -r requirements.txt
 
 script:
-  - python3 main_driver.py zip.csv
-  - python3 main_driver.py train_zip.csv test_zip.csv 0
+- coverage run main_driver.py zip.csv
+- coverage main_driver.py train_zip.csv test_zip.csv 0
+after_success:
+- bash <(curl -s https://codecov.io/bash)

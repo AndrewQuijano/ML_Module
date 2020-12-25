@@ -14,6 +14,6 @@ install:
 
 script:
 - coverage run main_driver.py zip.csv
-- coverage main_driver.py train_zip.csv test_zip.csv 0
+- coverage run main_driver.py train_zip.csv test_zip.csv 0
 after_success:
 - bash <(curl -s https://codecov.io/bash)

@@ -1,4 +1,7 @@
 # ML_Module
+[![Build Status](https://travis-ci.com/AndrewQuijano/ML_Module.svg?branch=master)](https://travis-ci.com/AndrewQuijano/ML_Module)
+[![codecov](https://codecov.io/gh/AndrewQuijano/ML_Module/branch/master/graph/badge.svg?token=5CM4R0VNM9)](https://codecov.io/gh/AndrewQuijano/ML_Module)
+
 I will be using sci-kit learn for various projects such as my IDS project, Indoor Localization Project and potentially others. To avoid confusing myself, I will place the modules here so I can just import into those projects.
 Please feel free to use this. If you run the main_driver.py script it will generate the following
 - A folder containing confusion matricies
